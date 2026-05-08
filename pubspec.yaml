@@ -1,0 +1,24 @@
+name: dryrun_ui_flutter
+description: "DryRunUI Flutter Desktop - MPTool Dry Run Manager"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  file_selector: ^1.0.3
+  path: ^1.9.0
+  shared_preferences: ^2.2.3
+  window_manager: ^0.3.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

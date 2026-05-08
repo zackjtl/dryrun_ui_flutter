@@ -1,0 +1,42 @@
+# ── Miscellaneous ────────────────────────────────────────────────
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.pyo
+
+# ── IntelliJ ─────────────────────────────────────────────────────
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# ── Flutter/Dart/Pub ─────────────────────────────────────────────
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+
+# ── Build（整個 build/ 目錄完全 ignore）─────────────────────────
+/build/
+
+# ── Symbolication / Obfuscation ──────────────────────────────────
+app.*.symbols
+app.*.map.json
+
+# ── Android Studio build artifacts ──────────────────────────────
+/android/app/debug
+/android/app/profile
+/android/app/release

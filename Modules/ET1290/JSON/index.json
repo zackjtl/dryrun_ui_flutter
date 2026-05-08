@@ -1,0 +1,1117 @@
+{
+  "module": "ET1290",
+  "total": 222,
+  "flash_ids": [
+    {
+      "flash_id": "ec d5 94 29 34 ff",
+      "number": 1,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d5 98 71 54 ff",
+      "number": 2,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d3 84 72 50 ff",
+      "number": 3,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d5 84 72 50 ff",
+      "number": 4,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d5 94 76 54 c3",
+      "number": 5,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d5 94 76 54 43",
+      "number": 6,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 94 72 54 ff",
+      "number": 7,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 94 76 64 ff",
+      "number": 8,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 c5 72 54 ff",
+      "number": 9,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec de d5 72 58 ff",
+      "number": 10,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec de 95 76 68 ff",
+      "number": 11,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 14 76 54 c2",
+      "number": 12,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec de 55 76 58 c2",
+      "number": 13,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 94 7a 54 c3",
+      "number": 14,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec de 98 ce 74 c3",
+      "number": 15,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec 3a d9 ce 78 c3",
+      "number": 16,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 98 ca 54 ff",
+      "number": 17,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 98 ce 74 c3",
+      "number": 18,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d5 10 6a 54 c2",
+      "number": 19,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 94 7a 54 43",
+      "number": 20,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 94 7e 64 c4",
+      "number": 21,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec de a4 7a 68 c4",
+      "number": 22,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec de a4 7e 78 c4",
+      "number": 23,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec ae a4 7a 68 c4",
+      "number": 24,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec de 98 ce 74 c4",
+      "number": 25,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec a5 98 ce 74 c4",
+      "number": 26,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d5 98 ce 74 c4",
+      "number": 27,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec d7 98 ce 74 c4",
+      "number": 28,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "ec a7 98 ce 74 c4",
+      "number": 29,
+      "vendor": "Samsung"
+    },
+    {
+      "flash_id": "98 d3 94 ba 64 ff",
+      "number": 30,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d3 94 ba 70 ff",
+      "number": 31,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d3 94 ba f0 ff",
+      "number": 32,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d5 94 ba 74 ff",
+      "number": 33,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 95 ba 78 ff",
+      "number": 34,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 94 32 76 ff",
+      "number": 35,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 94 82 76 ff",
+      "number": 36,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 98 b2 76 d5",
+      "number": 37,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de a8 82 7a 55",
+      "number": 38,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 98 82 76 55",
+      "number": 39,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d5 88 82 72 55",
+      "number": 40,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d5 d0 22 76 95",
+      "number": 41,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d5 d0 22 76 55",
+      "number": 42,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 94 82 76 d6",
+      "number": 43,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 98 92 72 56",
+      "number": 44,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 98 92 72 d6",
+      "number": 45,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 98 92 72 56",
+      "number": 46,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 98 92 72 d6",
+      "number": 47,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 98 82 76 d5",
+      "number": 48,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de a4 82 76 57",
+      "number": 49,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de a4 82 76 d7",
+      "number": 50,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 94 32 76 d6",
+      "number": 51,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de a4 82 76 d6",
+      "number": 52,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 4c a8 92 76 d7",
+      "number": 53,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d5 84 32 72 d6",
+      "number": 54,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d5 84 32 72 56",
+      "number": 55,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 94 32 76 56",
+      "number": 56,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de a4 82 76 56",
+      "number": 57,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 84 93 72 57",
+      "number": 58,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 84 93 72 d7",
+      "number": 59,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a a8 92 76 57",
+      "number": 60,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a a8 92 76 d7",
+      "number": 61,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 98 92 72 57",
+      "number": 62,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 98 92 72 d7",
+      "number": 63,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 98 92 72 d7",
+      "number": 64,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 98 92 72 57",
+      "number": 65,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 85 93 76 57",
+      "number": 66,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 85 93 76 d7",
+      "number": 67,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a a5 82 7a 56",
+      "number": 68,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a a5 82 7a d6",
+      "number": 69,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 94 93 76 57",
+      "number": 70,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 94 93 76 d7",
+      "number": 71,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 84 93 72 d7",
+      "number": 72,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 84 93 72 57",
+      "number": 73,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 dc 90 26 76 15",
+      "number": 74,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d3 90 26 76 15",
+      "number": 75,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d3 91 26 76 15",
+      "number": 76,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d5 91 26 76 15",
+      "number": 77,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 d1 22 7a 55",
+      "number": 78,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d5 d0 22 76 d5",
+      "number": 79,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 a0 32 76 d6",
+      "number": 80,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de a1 32 7a d6",
+      "number": 81,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a a4 93 7a d0",
+      "number": 82,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3c a5 93 7e d0",
+      "number": 83,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 a0 32 76 56",
+      "number": 84,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de a1 32 7a 56",
+      "number": 85,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 dc 90 26 76 16",
+      "number": 86,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d3 91 26 76 16",
+      "number": 87,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 dc 91 26 76 16",
+      "number": 88,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 94 93 76 50",
+      "number": 89,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 95 93 7a 50",
+      "number": 90,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 94 93 76 d0",
+      "number": 91,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 95 93 7a d0",
+      "number": 92,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 95 93 7a d7",
+      "number": 93,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 95 93 7a 57",
+      "number": 94,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 de 94 93 76 51",
+      "number": 95,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 94 93 76 d1",
+      "number": 96,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3c 95 93 7a d1",
+      "number": 97,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 94 93 76 51",
+      "number": 98,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3c 95 93 7a 51",
+      "number": 99,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3e 96 93 7e 51",
+      "number": 100,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 d7 84 93 72 51",
+      "number": 101,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3a 98 b3 76 72",
+      "number": 102,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3c 98 b3 76 72",
+      "number": 103,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "98 3e 99 b3 7a 72",
+      "number": 104,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "ad d5 94 25 44 ff",
+      "number": 105,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad d7 94 25 44 ff",
+      "number": 106,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad d7 95 25 48 ff",
+      "number": 107,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad d5 18 2d 04 ff",
+      "number": 108,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad d7 18 8d 04 ff",
+      "number": 109,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad d7 94 9a 74 ff",
+      "number": 110,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad de 94 d2 04 ff",
+      "number": 111,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad de 95 9a 78 ff",
+      "number": 112,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad d5 94 9a 74 ff",
+      "number": 113,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad de 94 da 74 c4",
+      "number": 114,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad d7 94 91 60 44",
+      "number": 115,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad de 94 eb 74 44",
+      "number": 116,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad d5 94 da 74 c4",
+      "number": 117,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad de 14 a7 42 4a",
+      "number": 118,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "ad de 14 ab 42 4a",
+      "number": 119,
+      "vendor": "Hynix"
+    },
+    {
+      "flash_id": "89 d3 94 2d 64 ff",
+      "number": 120,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 d3 90 2e 64 ff",
+      "number": 121,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 d5 d1 2e 68 ff",
+      "number": 122,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 d5 94 3e 74 ff",
+      "number": 123,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 d7 94 3e 84 ff",
+      "number": 124,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 d7 d5 3e 78 ff",
+      "number": 125,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 48 04 46 85 ff",
+      "number": 126,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 48 04 46 a5 ff",
+      "number": 127,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 48 04 4a a5 ff",
+      "number": 128,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 68 04 46 89 ff",
+      "number": 129,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 68 04 46 a9 ff",
+      "number": 130,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 68 24 46 89 ff",
+      "number": 131,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 68 24 46 a9 ff",
+      "number": 132,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 68 24 4a a9 ff",
+      "number": 133,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 68 04 4a a9 ff",
+      "number": 134,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 68 08 56 8a ff",
+      "number": 135,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 88 24 4b a9 ff",
+      "number": 136,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 88 04 4b a9 ff",
+      "number": 137,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 88 28 5f a9 ff",
+      "number": 138,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "89 88 24 4b a9 84",
+      "number": 139,
+      "vendor": "Intel"
+    },
+    {
+      "flash_id": "2c d3 94 2d 64 ff",
+      "number": 140,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c d3 90 2e 64 ff",
+      "number": 141,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c d5 d1 2e 68 ff",
+      "number": 142,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c d5 94 3e 74 ff",
+      "number": 143,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 48 00 26 89 ff",
+      "number": 144,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c d7 94 3e 84 ff",
+      "number": 145,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c d7 d5 3e 78 ff",
+      "number": 146,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c d9 d5 3e 88 ff",
+      "number": 147,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 68 01 a6 89 ff",
+      "number": 148,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 38 84 c6 85 ff",
+      "number": 149,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 48 04 46 85 ff",
+      "number": 150,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 48 04 46 a5 ff",
+      "number": 151,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 48 04 4a a5 ff",
+      "number": 152,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 68 04 46 89 ff",
+      "number": 153,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 68 05 c6 85 ff",
+      "number": 154,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 88 05 c6 89 ff",
+      "number": 155,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 68 08 56 8a ff",
+      "number": 156,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 68 04 46 a9 ff",
+      "number": 157,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 68 04 4a a9 ff",
+      "number": 158,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 88 04 4b a9 ff",
+      "number": 159,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c a8 25 cb 89 ff",
+      "number": 160,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c a8 05 cb a9 ff",
+      "number": 161,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c a8 09 df a9 00",
+      "number": 162,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 88 08 5f 89 00",
+      "number": 163,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 88 08 5f a9 00",
+      "number": 164,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 88 28 5f 89 00",
+      "number": 165,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 88 28 5f a9 00",
+      "number": 166,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 68 00 27 a9 ff",
+      "number": 167,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 64 44 4b a9 ff",
+      "number": 168,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 84 64 34 a5 00",
+      "number": 169,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 88 01 a7 a9 00",
+      "number": 170,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 84 64 3c a5 00",
+      "number": 171,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 48 00 26 a9 00",
+      "number": 172,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 84 64 3c a9 04",
+      "number": 173,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 64 64 3c a5 04",
+      "number": 174,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 64 64 3c a5 05",
+      "number": 175,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 84 c5 4b a9 00",
+      "number": 176,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "2c 44 44 4b a9 ff",
+      "number": 177,
+      "vendor": "Micron"
+    },
+    {
+      "flash_id": "45 de a8 82 7a d5",
+      "number": 178,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "98 de a8 82 7a d5",
+      "number": 179,
+      "vendor": "Kioxia"
+    },
+    {
+      "flash_id": "45 ce a8 82 7a d5",
+      "number": 180,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 94 82 76 56",
+      "number": 181,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 98 92 72 56",
+      "number": 182,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 d7 98 82 76 d5",
+      "number": 183,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 c7 98 82 76 d5",
+      "number": 184,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 d5 98 82 72 55",
+      "number": 185,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 d5 88 82 72 55",
+      "number": 186,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 d7 98 92 72 56",
+      "number": 187,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 98 92 72 57",
+      "number": 188,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 4c a8 92 76 57",
+      "number": 189,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 d7 98 b2 76 d5",
+      "number": 190,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 84 93 72 57",
+      "number": 191,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 d7 98 92 72 57",
+      "number": 192,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 94 93 76 57",
+      "number": 193,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 94 93 76 d7",
+      "number": 194,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 d7 84 93 72 57",
+      "number": 195,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 94 93 76 d0",
+      "number": 196,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 94 93 76 50",
+      "number": 197,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3a 95 93 7a d0",
+      "number": 198,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3a 95 93 7a 50",
+      "number": 199,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 de 94 93 76 51",
+      "number": 200,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3a 94 93 76 51",
+      "number": 201,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3c 95 93 7a 51",
+      "number": 202,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3e 96 93 7e 51",
+      "number": 203,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3a 95 93 7a 51",
+      "number": 204,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3c 96 93 7e 51",
+      "number": 205,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3c 98 b3 76 72",
+      "number": 206,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3e 99 b3 7a 72",
+      "number": 207,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3e 98 b3 76 72",
+      "number": 208,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 48 99 b3 7a 72",
+      "number": 209,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3e 98 b3 76 ff",
+      "number": 210,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 48 99 b3 7a ff",
+      "number": 211,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 49 9a b3 7e ff",
+      "number": 212,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3e 98 b3 f6 ff",
+      "number": 213,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 48 99 b3 fa 6b",
+      "number": 214,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3e 98 03 76 64",
+      "number": 215,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 3e 98 03 76 6c",
+      "number": 216,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 48 99 03 7a 6c",
+      "number": 217,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 49 9a 03 7e 6c",
+      "number": 218,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 48 9a b3 7e 72",
+      "number": 219,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 49 9a b3 7e 72",
+      "number": 220,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 48 a8 03 7a e6",
+      "number": 221,
+      "vendor": "SanDisk"
+    },
+    {
+      "flash_id": "45 49 a9 03 7e e6",
+      "number": 222,
+      "vendor": "SanDisk"
+    }
+  ],
+  "ctype": "36"
+}
