@@ -10,17 +10,50 @@ import '../models/part_number.dart';
 import '../services/module_service.dart';
 import '../services/group_service.dart';
 
+// ─── Palette ─────────────────────────────────────────────────────────────────
+const _kSidebarBg = Color(0xFF0F172A);
+const _kHeaderBg  = Color(0xFF1E293B);
+const _kBlue      = Color(0xFF3B82F6);
+const _kMainBg    = Color(0xFFF1F5F9);
+const _kSurface   = Color(0xFFFFFFFF);
+const _kRowOdd    = Color(0xFFF8FAFC);
+const _kRowSel    = Color(0xFFEFF6FF);
+const _kRowHover  = Color(0xFFE0F2FE);
+const _kBorder    = Color(0xFFE2E8F0);
+const _kTextPri   = Color(0xFF0F172A);
+const _kTextSec   = Color(0xFF64748B);
+const _kTermBg    = Color(0xFF0D1117);
+const _kTermHdr   = Color(0xFF161B22);
+// ─────────────────────────────────────────────────────────────────────────────
+
 const _vendorOrder = [
-  'Samsung',
-  'Kioxia',
-  'Micron',
-  'Hynix',
-  'Intel',
-  'SanDisk'
+  'Samsung', 'Kioxia', 'Micron', 'Hynix', 'Intel', 'SanDisk',
 ];
 
 const _defaultModulesSourcePath =
     r'O:\PRD-(產品研發處)-MPTool\Utility\MPDryRunModules\Modules';
+
+Color _logColor(String line) {
+  if (line.startsWith('====='))        return const Color(0xFF60A5FA);
+  if (line.startsWith('[Error]'))      return const Color(0xFFF87171);
+  if (line.startsWith('[Exit] 0'))     return const Color(0xFF4ADE80);
+  if (line.startsWith('[Exit]'))       return const Color(0xFFFB923C);
+  if (line.startsWith('[Info]'))       return const Color(0xFF94A3B8);
+  if (line.startsWith('@@DRYRUN_RUN')) return const Color(0xFFA78BFA);
+  return const Color(0xFFCBD5E1);
+}
+
+({Color bg, Color fg}) _cellColors(String ct) {
+  return switch (ct.toUpperCase()) {
+    'TLC' => (bg: const Color(0xFFDCFCE7), fg: const Color(0xFF166534)),
+    'QLC' => (bg: const Color(0xFFDBEAFE), fg: const Color(0xFF1D4ED8)),
+    'SLC' => (bg: const Color(0xFFFEF3C7), fg: const Color(0xFF92400E)),
+    'MLC' => (bg: const Color(0xFFF3E8FF), fg: const Color(0xFF6B21A8)),
+    _     => (bg: const Color(0xFFF1F5F9), fg: const Color(0xFF475569)),
+  };
+}
+
+// ─── HomeScreen ──────────────────────────────────────────────────────────────
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,33 +63,33 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _prefsArchivePath = 'dryrun_ui.archive_path';
+  static const _prefsArchivePath   = 'dryrun_ui.archive_path';
   static const _prefsSelectedGroup = 'dryrun_ui.selected_group';
   static const _prefsOpenHtmlReport = 'dryrun_ui.open_html_report';
   static String _prefsVendor(String module) => 'dryrun_ui.vendor.$module';
 
-  List<String> _modules = [];
-  String? _selectedModule;
-  int? _moduleCtype;
+  List<String>    _modules        = [];
+  String?         _selectedModule;
+  int?            _moduleCtype;
   List<PartNumber> _allPartNumbers = [];
-  bool _isLoading = false;
-  bool _selectAll = false;
+  bool            _isLoading      = false;
+  bool            _selectAll      = false;
 
-  String _selectedVendor = 'All';
+  String  _selectedVendor = 'All';
 
-  // Group state
-  List<String> _groups = [];
-  String? _selectedGroup;
+  List<String> _groups        = [];
+  String?      _selectedGroup;
 
   String? _archivePath;
-  bool _isRunning = false;
-  bool _showOutput = true;
-  bool _openHtmlReport = false;
+  bool    _isRunning      = false;
+  bool    _showOutput     = true;
+  bool    _openHtmlReport = false;
   String? _hoveredRowKey;
-  final List<String> _runLog = [];
+
+  final List<String>     _runLog           = [];
   final ScrollController _logScrollController = ScrollController();
   Process? _activeProcess;
-  bool _stopRequested = false;
+  bool     _stopRequested = false;
 
   List<PartNumber> get _filteredPartNumbers {
     if (_selectedVendor == 'All') return _allPartNumbers;
@@ -64,10 +97,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<String> get _vendors {
-    final set =
-        _allPartNumbers.map((p) => p.vendor).where((v) => v.isNotEmpty).toSet();
+    final set = _allPartNumbers
+        .map((p) => p.vendor)
+        .where((v) => v.isNotEmpty)
+        .toSet();
     final ordered = _vendorOrder.where((v) => set.contains(v)).toList();
-    final others = set.where((v) => !_vendorOrder.contains(v)).toList()..sort();
+    final others  = set.where((v) => !_vendorOrder.contains(v)).toList()..sort();
     return ['All', ...ordered, ...others];
   }
 
@@ -84,9 +119,11 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // ─── Init ─────────────────────────────────────────────────────────────────
+
   Future<void> _init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final archivePath = prefs.getString(_prefsArchivePath);
+    final prefs         = await SharedPreferences.getInstance();
+    final archivePath   = prefs.getString(_prefsArchivePath);
     final openHtmlReport = prefs.getBool(_prefsOpenHtmlReport) ?? false;
     final archiveOk = archivePath != null &&
         archivePath.trim().isNotEmpty &&
@@ -95,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await prefs.remove(_prefsArchivePath);
     }
     setState(() {
-      _archivePath = archiveOk ? archivePath : null;
+      _archivePath    = archiveOk ? archivePath : null;
       _openHtmlReport = openHtmlReport;
     });
     await _ensureModulesAvailableOnStartup();
@@ -111,19 +148,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Modules folder not found'),
-        content: Text(
-          'Local Modules folder is missing or empty.\n\n'
-          'Load from:\n$_defaultModulesSourcePath\n\n'
-          'Copy to:\n${ModuleService.modulesDirPath}',
-        ),
+      builder: (ctx) => _AppDialog(
+        title: 'Modules not found',
+        content: 'Local Modules folder is missing or empty.\n\n'
+            'Source:\n$_defaultModulesSourcePath\n\n'
+            'Destination:\n${ModuleService.modulesDirPath}',
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Load'),
           ),
@@ -138,17 +173,17 @@ class _HomeScreenState extends State<HomeScreen> {
       await ModuleService.copyModulesFrom(_defaultModulesSourcePath);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Modules loaded')),
+        const SnackBar(content: Text('Modules loaded successfully')),
       );
     } catch (e) {
       if (!mounted) return;
       await showDialog<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Load failed'),
-          content: Text(e.toString()),
+        builder: (ctx) => _AppDialog(
+          title: 'Load failed',
+          content: e.toString(),
           actions: [
-            TextButton(
+            FilledButton(
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('OK'),
             ),
@@ -156,9 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -171,53 +204,49 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedModule = modules.first;
       }
     });
-    if (_selectedModule != null) {
-      await _loadPartNumbers();
-    }
+    if (_selectedModule != null) await _loadPartNumbers();
   }
 
   Future<void> _loadPartNumbers() async {
     if (_selectedModule == null) return;
     setState(() => _isLoading = true);
-    final moduleData = await ModuleService.loadModuleData(_selectedModule!);
-    final prefs = await SharedPreferences.getInstance();
-    final savedVendor = prefs.getString(_prefsVendor(_selectedModule!));
-    final vendorsSet = moduleData.partNumbers
+    final moduleData   = await ModuleService.loadModuleData(_selectedModule!);
+    final prefs        = await SharedPreferences.getInstance();
+    final savedVendor  = prefs.getString(_prefsVendor(_selectedModule!));
+    final vendorsSet   = moduleData.partNumbers
         .map((p) => p.vendor)
         .where((v) => v.isNotEmpty)
         .toSet();
-    final ordered = _vendorOrder.where((v) => vendorsSet.contains(v)).toList();
-    final others = vendorsSet.where((v) => !_vendorOrder.contains(v)).toList()
+    final ordered      = _vendorOrder.where((v) => vendorsSet.contains(v)).toList();
+    final others       = vendorsSet.where((v) => !_vendorOrder.contains(v)).toList()
       ..sort();
     final validVendors = {'All', ...ordered, ...others};
-    final restoredVendor =
-        (savedVendor != null && validVendors.contains(savedVendor))
-            ? savedVendor
-            : 'All';
+    final restoredVendor = (savedVendor != null && validVendors.contains(savedVendor))
+        ? savedVendor
+        : 'All';
     setState(() {
       _allPartNumbers = moduleData.partNumbers;
-      _moduleCtype = moduleData.ctype;
-      _isLoading = false;
-      _selectAll = false;
+      _moduleCtype    = moduleData.ctype;
+      _isLoading      = false;
+      _selectAll      = false;
       _selectedVendor = restoredVendor;
     });
     _loadGroups();
   }
 
-  // --- Group methods ---
+  // ─── Group methods ────────────────────────────────────────────────────────
+
   Future<void> _loadGroups() async {
-    final groups = await GroupService.listGroups();
-    final prefs = await SharedPreferences.getInstance();
+    final groups    = await GroupService.listGroups();
+    final prefs     = await SharedPreferences.getInstance();
     final savedGroup = prefs.getString(_prefsSelectedGroup);
     setState(() {
-      _groups = groups;
+      _groups        = groups;
       _selectedGroup = (savedGroup != null && groups.contains(savedGroup))
           ? savedGroup
           : null;
     });
-    if (_selectedGroup != null) {
-      await _loadGroup(_selectedGroup);
-    }
+    if (_selectedGroup != null) await _loadGroup(_selectedGroup);
   }
 
   Future<void> _saveGroup() async {
@@ -232,14 +261,18 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) {
         final ctrl = TextEditingController();
-        return AlertDialog(
-          title: const Text('Save Group'),
-          content: TextField(
+        return _AppDialog(
+          title: 'Save Group',
+          content: null,
+          customContent: TextField(
             controller: ctrl,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Group Name',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: 'Group name',
+              hintText: 'e.g. Samsung TLC',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              filled: true,
+              fillColor: _kMainBg,
             ),
             onSubmitted: (v) => Navigator.of(ctx).pop(v),
           ),
@@ -248,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () => Navigator.of(ctx).pop(ctrl.text),
               child: const Text('Save'),
             ),
@@ -266,9 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final selections = await GroupService.loadGroupSelections(name);
     if (selections.isEmpty) return;
     setState(() {
-      _allPartNumbers =
-          GroupService.applySelections(_allPartNumbers, selections);
-      _selectedGroup = name;
+      _allPartNumbers = GroupService.applySelections(_allPartNumbers, selections);
+      _selectedGroup  = name;
     });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsSelectedGroup, name);
@@ -278,19 +310,16 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedGroup == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Group'),
-        content: Text('Delete group "$_selectedGroup"?'),
+      builder: (ctx) => _AppDialog(
+        title: 'Delete Group',
+        content: 'Delete "$_selectedGroup"? This cannot be undone.',
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Delete'),
           ),
@@ -299,11 +328,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (confirmed != true) return;
     await GroupService.deleteGroup(_selectedGroup!);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs     = await SharedPreferences.getInstance();
     final savedGroup = prefs.getString(_prefsSelectedGroup);
-    if (savedGroup == _selectedGroup) {
-      await prefs.remove(_prefsSelectedGroup);
-    }
+    if (savedGroup == _selectedGroup) await prefs.remove(_prefsSelectedGroup);
     _loadGroups();
   }
 
@@ -319,6 +346,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await prefs.setString(_prefsArchivePath, file.path);
   }
 
+  // ─── Path helpers ─────────────────────────────────────────────────────────
+
   String get _exeDirPath => File(Platform.resolvedExecutable).parent.path;
 
   Iterable<String> _searchBases() sync* {
@@ -331,18 +360,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String _joinBaseRel(String base, String rel) {
-    return p.joinAll([base, ...p.split(rel)]);
-  }
+  String _joinBaseRel(String base, String rel) =>
+      p.joinAll([base, ...p.split(rel)]);
 
   String? _findExistingFileRelPath(List<String> relCandidates) {
     for (final base in _searchBases()) {
       for (final rel in relCandidates) {
-        final absPath = _joinBaseRel(base, rel);
-        final abs = File(absPath);
-        if (abs.existsSync()) {
-          return p.relative(abs.path, from: _exeDirPath);
-        }
+        final abs = File(_joinBaseRel(base, rel));
+        if (abs.existsSync()) return p.relative(abs.path, from: _exeDirPath);
       }
     }
     return null;
@@ -351,11 +376,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _findExistingDirRelPath(List<String> relCandidates) {
     for (final base in _searchBases()) {
       for (final rel in relCandidates) {
-        final absPath = _joinBaseRel(base, rel);
-        final abs = Directory(absPath);
-        if (abs.existsSync()) {
-          return p.relative(abs.path, from: _exeDirPath);
-        }
+        final abs = Directory(_joinBaseRel(base, rel));
+        if (abs.existsSync()) return p.relative(abs.path, from: _exeDirPath);
       }
     }
     return null;
@@ -368,17 +390,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ['python'],
       ['python3'],
     ];
-
     for (final cand in candidates) {
-      final exe = cand.first;
-      final args = <String>[
-        ...cand.skip(1),
-        '-V',
-      ];
       try {
         final result = await Process.run(
-          exe,
-          args,
+          cand.first,
+          [...cand.skip(1), '-V'],
           runInShell: true,
         );
         if (result.exitCode == 0) return cand;
@@ -387,10 +403,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return null;
   }
 
+  // ─── Run logic ────────────────────────────────────────────────────────────
+
   void _appendLog(String line) {
-    setState(() {
-      _runLog.add(line);
-    });
+    setState(() => _runLog.add(line));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_logScrollController.hasClients) return;
       _logScrollController.animateTo(
@@ -412,43 +428,36 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, int> exitCodes,
     Map<String, Map<String, int>> deviceExitCodesByTarget,
   ) async {
-    final now = DateTime.now();
-    final safeTime = now.toIso8601String().replaceAll(':', '-');
-    final fileName = 'dryrun_report_$safeTime.html';
+    final now       = DateTime.now();
+    final safeTime  = now.toIso8601String().replaceAll(':', '-');
+    final fileName  = 'dryrun_report_$safeTime.html';
     final reportsDir = Directory(p.join(_exeDirPath, 'Reports'));
-    if (!reportsDir.existsSync()) {
-      reportsDir.createSync(recursive: true);
-    }
+    if (!reportsDir.existsSync()) reportsDir.createSync(recursive: true);
     final reportFile = File(p.join(reportsDir.path, fileName));
 
-    const escape = HtmlEscape();
-    final moduleName = _selectedModule ?? '';
-    final ctypeText = _moduleCtype?.toString() ?? '-';
+    const escape      = HtmlEscape();
+    final moduleName  = _selectedModule ?? '';
+    final ctypeText   = _moduleCtype?.toString() ?? '-';
     final archiveName = p.basename(archivePath);
 
     final rows = <String>[];
     int passCount = 0;
     int failCount = 0;
     for (final t in targets) {
-      final code = exitCodes[t] ?? -9999;
-      final ok = code == 0;
-      if (ok) {
-        passCount++;
-      } else {
-        failCount++;
-      }
+      final code      = exitCodes[t] ?? -9999;
+      final ok        = code == 0;
+      ok ? passCount++ : failCount++;
       final deviceMap = deviceExitCodesByTarget[t] ?? const <String, int>{};
       final deviceNames = deviceMap.keys.toList()..sort();
       final deviceRows = deviceNames.map((dev) {
         final dcode = deviceMap[dev] ?? -9999;
-        final dok = dcode == 0;
+        final dok   = dcode == 0;
         return '''
               <tr class="${dok ? 'pass' : 'fail'}">
                 <td>${escape.convert(dev)}</td>
                 <td>${dok ? 'PASS' : 'FAIL'}</td>
                 <td>${escape.convert(dcode.toString())}</td>
-              </tr>
-            ''';
+              </tr>''';
       }).join('\n');
       final deviceDetails = deviceNames.isEmpty
           ? ''
@@ -456,28 +465,17 @@ class _HomeScreenState extends State<HomeScreen> {
             <details>
               <summary>Device Results</summary>
               <table class="sub">
-                <thead>
-                  <tr>
-                    <th>Device</th>
-                    <th>Status</th>
-                    <th>Exit Code</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  $deviceRows
-                </tbody>
+                <thead><tr><th>Device</th><th>Status</th><th>Exit Code</th></tr></thead>
+                <tbody>$deviceRows</tbody>
               </table>
-            </details>
-          ''';
-
+            </details>''';
       rows.add('''
         <tr class="${ok ? 'pass' : 'fail'}">
           <td>${escape.convert(t)}</td>
           <td>${ok ? 'PASS' : 'FAIL'}</td>
           <td>${escape.convert(code.toString())}</td>
           <td>$deviceDetails</td>
-        </tr>
-      ''');
+        </tr>''');
     }
 
     final html = '''
@@ -521,21 +519,12 @@ class _HomeScreenState extends State<HomeScreen> {
       <span class="badge fail">FAIL ${escape.convert(failCount.toString())}</span>
     </div>
   </div>
-
   <table>
     <thead>
-      <tr>
-        <th>Target</th>
-        <th>Status</th>
-        <th>Exit Code</th>
-        <th>Details</th>
-      </tr>
+      <tr><th>Target</th><th>Status</th><th>Exit Code</th><th>Details</th></tr>
     </thead>
-    <tbody>
-      ${rows.join('\n')}
-    </tbody>
+    <tbody>${rows.join('\n')}</tbody>
   </table>
-
   <div class="footer">Dump folder: ${escape.convert(p.join(_exeDirPath, 'Dump'))}</div>
 </body>
 </html>
@@ -546,12 +535,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       if (Platform.isWindows) {
-        await Process.start(
-          'cmd',
-          ['/c', 'start', '', reportFile.path],
-          runInShell: true,
-          workingDirectory: _exeDirPath,
-        );
+        await Process.start('cmd', ['/c', 'start', '', reportFile.path],
+            runInShell: true, workingDirectory: _exeDirPath);
       } else if (Platform.isMacOS) {
         await Process.start('open', [reportFile.path]);
       } else if (Platform.isLinux) {
@@ -568,7 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final archivePath = _archivePath;
     if (archivePath == null || archivePath.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇 MPTool .7z 檔案')),
+        const SnackBar(content: Text('Please select an MPTool .7z archive first')),
       );
       return;
     }
@@ -576,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final selected = _allPartNumbers.where((p) => p.isSelected).toList();
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇至少一個 Part Number')),
+        const SnackBar(content: Text('Please select at least one part number')),
       );
       return;
     }
@@ -584,53 +569,42 @@ class _HomeScreenState extends State<HomeScreen> {
     final targetSet = <String>{};
     for (final pn in selected) {
       final vendor = pn.vendor.trim();
-      final dirPn =
-          pn.dirPn.trim().isNotEmpty ? pn.dirPn.trim() : pn.name.trim();
+      final dirPn  = pn.dirPn.trim().isNotEmpty ? pn.dirPn.trim() : pn.name.trim();
       if (vendor.isEmpty || dirPn.isEmpty) continue;
       targetSet.add('$vendor/$dirPn');
     }
 
     if (targetSet.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('選取的資料缺少 Vendor/PartNumber 目錄資訊')),
+        const SnackBar(content: Text('Selected items are missing Vendor/PartNumber directory info')),
       );
       return;
     }
     final targets = targetSet.toList()..sort();
 
-    final scriptRel = _findExistingFileRelPath(const [
-      'scripts/run_dryrun.py',
-      'run_dryrun.py',
-    ]);
+    final scriptRel = _findExistingFileRelPath(
+        const ['scripts/run_dryrun.py', 'run_dryrun.py']);
     if (scriptRel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('找不到 scripts/run_dryrun.py，請確認 exe 同層有 scripts 資料夾')),
+        const SnackBar(content: Text('run_dryrun.py not found — ensure scripts/ folder is next to the exe')),
       );
       return;
     }
 
-    final readFeatureRel = _findExistingFileRelPath(const [
-      'scripts/read_feature.py',
-      'read_feature.py',
-    ]);
+    final readFeatureRel = _findExistingFileRelPath(
+        const ['scripts/read_feature.py', 'read_feature.py']);
     if (readFeatureRel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('找不到 scripts/read_feature.py，無法檢查 MPTool CLI 支援')),
+        const SnackBar(content: Text('read_feature.py not found — cannot check MPTool CLI support')),
       );
       return;
     }
 
-    final devicesDirRel = _findExistingDirRelPath(const [
-      'DryRunUI/GeneratedDevices',
-      'GeneratedDevices',
-    ]);
+    final devicesDirRel = _findExistingDirRelPath(
+        const ['DryRunUI/GeneratedDevices', 'GeneratedDevices']);
     if (devicesDirRel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                '找不到 DryRunUI/GeneratedDevices（或 GeneratedDevices），無法執行 dry run')),
+        const SnackBar(content: Text('GeneratedDevices directory not found — cannot run dry run')),
       );
       return;
     }
@@ -639,16 +613,15 @@ class _HomeScreenState extends State<HomeScreen> {
     if (pyCmd == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('找不到可用的 Python（py / python），無法執行 dry run')),
+        const SnackBar(content: Text('Python not found (py / python) — cannot run dry run')),
       );
       return;
     }
 
     setState(() {
-      _isRunning = true;
-      _stopRequested = false;
-      _showOutput = true;
+      _isRunning      = true;
+      _stopRequested  = false;
+      _showOutput     = true;
       _runLog.clear();
     });
 
@@ -661,26 +634,23 @@ class _HomeScreenState extends State<HomeScreen> {
     _appendLog('[Info] ctype: ${_moduleCtype?.toString() ?? '-'}');
     _appendLog('[Info] Targets: ${targets.length}');
 
-    final exe = pyCmd.first;
-    final prefixArgs = pyCmd.skip(1).toList();
-    final workingDir = _exeDirPath;
-    const workRootRel = '_dryrun_work';
+    final exe          = pyCmd.first;
+    final prefixArgs   = pyCmd.skip(1).toList();
+    final workingDir   = _exeDirPath;
+    const workRootRel  = '_dryrun_work';
     String? workName;
     try {
       final archiveFile = File(archivePath);
-      final stat = archiveFile.statSync();
-      final stem = p.basenameWithoutExtension(archivePath);
-      final safeStem = stem.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
-      workName =
-          'mptool_${safeStem}_${stat.size}_${stat.modified.millisecondsSinceEpoch}';
+      final stat        = archiveFile.statSync();
+      final stem        = p.basenameWithoutExtension(archivePath);
+      final safeStem    = stem.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
+      workName = 'mptool_${safeStem}_${stat.size}_${stat.modified.millisecondsSinceEpoch}';
     } catch (_) {}
 
     _appendLog('[Info] work-root: $workRootRel');
-    if (workName != null) {
-      _appendLog('[Info] work-name: $workName');
-    }
+    if (workName != null) _appendLog('[Info] work-name: $workName');
 
-    final exitCodes = <String, int>{};
+    final exitCodes               = <String, int>{};
     final deviceExitCodesByTarget = <String, Map<String, int>>{};
 
     try {
@@ -696,43 +666,32 @@ class _HomeScreenState extends State<HomeScreen> {
           scriptRel,
           archivePath,
           target,
-          '--devices-dir',
-          devicesDirRel,
-          '--output-base',
-          '.',
-          '--work-root',
-          workRootRel,
+          '--devices-dir', devicesDirRel,
+          '--output-base', '.',
+          '--work-root',   workRootRel,
           '--keep-temp',
         ];
-        if (_moduleCtype != null) {
-          args.addAll(['--ctype', _moduleCtype.toString()]);
-        }
-        if (workName != null) {
-          args.addAll(['--work-name', workName]);
-        }
+        if (_moduleCtype != null) args.addAll(['--ctype', _moduleCtype.toString()]);
+        if (workName != null)      args.addAll(['--work-name', workName]);
 
         final process = await Process.start(
-          exe,
-          args,
+          exe, args,
           runInShell: true,
           workingDirectory: workingDir,
         );
-
         _activeProcess = process;
 
         final stdoutDone = Completer<void>();
         final stderrDone = Completer<void>();
-
         deviceExitCodesByTarget[target] = {};
 
         void handleLine(String line) {
           if (line.startsWith('@@DRYRUN_RUN ')) {
             try {
-              final jsonStr = line.substring('@@DRYRUN_RUN '.length);
-              final obj = jsonDecode(jsonStr) as Map<String, dynamic>;
-              final dev = (obj['device'] ?? '').toString();
-              final exit =
-                  int.tryParse((obj['exit_code'] ?? '').toString()) ?? -9999;
+              final obj = jsonDecode(line.substring('@@DRYRUN_RUN '.length))
+                  as Map<String, dynamic>;
+              final dev  = (obj['device'] ?? '').toString();
+              final exit = int.tryParse((obj['exit_code'] ?? '').toString()) ?? -9999;
               if (dev.isNotEmpty) {
                 final cur = deviceExitCodesByTarget[target]![dev];
                 if (cur == null) {
@@ -749,20 +708,16 @@ class _HomeScreenState extends State<HomeScreen> {
         process.stdout
             .transform(utf8.decoder)
             .transform(const LineSplitter())
-            .listen(
-              handleLine,
-              onDone: () => stdoutDone.complete(),
-              onError: (_) => stdoutDone.complete(),
-            );
+            .listen(handleLine,
+                onDone: () => stdoutDone.complete(),
+                onError: (_) => stdoutDone.complete());
 
         process.stderr
             .transform(utf8.decoder)
             .transform(const LineSplitter())
-            .listen(
-              handleLine,
-              onDone: () => stderrDone.complete(),
-              onError: (_) => stderrDone.complete(),
-            );
+            .listen(handleLine,
+                onDone: () => stderrDone.complete(),
+                onError: (_) => stderrDone.complete());
 
         final exitCode = await process.exitCode;
         await Future.wait([stdoutDone.future, stderrDone.future]);
@@ -772,24 +727,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (_openHtmlReport && !_stopRequested && exitCodes.isNotEmpty) {
         await _generateAndOpenHtmlReport(
-          archivePath,
-          targets,
-          exitCodes,
-          deviceExitCodesByTarget,
-        );
+            archivePath, targets, exitCodes, deviceExitCodesByTarget);
       }
     } catch (e) {
       _appendLog('[Error] $e');
     } finally {
       _activeProcess = null;
-      setState(() {
-        _isRunning = false;
-      });
+      setState(() => _isRunning = false);
     }
   }
 
   void _toggleSelection(int index) {
-    final list = _filteredPartNumbers;
+    final list   = _filteredPartNumbers;
     final target = list[index];
     setState(() {
       _allPartNumbers = _allPartNumbers.map((pn) {
@@ -814,468 +763,32 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // ─── Build ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredPartNumbers;
-    final archiveText = _archivePath?.trim() ?? '';
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FC),
+      backgroundColor: _kMainBg,
       body: Row(
         children: [
-          // --- Vendor Sidebar ---
-          Container(
-            width: 180,
-            color: const Color(0xFF2D3748),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title area
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 20, 16, 4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.memory, color: Colors.white, size: 22),
-                      SizedBox(width: 10),
-                      Text(
-                        'MP Dry Run',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
-                  child: Text(
-                    'Flash Configuration Tool',
-                    style: TextStyle(
-                      color: Color(0xFF718096),
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Text(
-                    'VENDOR',
-                    style: TextStyle(
-                      color: Color(0xFFA0AEC0),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _vendors.length,
-                    itemBuilder: (context, index) {
-                      final vendor = _vendors[index];
-                      final count = vendor == 'All'
-                          ? _allPartNumbers.length
-                          : _allPartNumbers
-                              .where((p) => p.vendor == vendor)
-                              .length;
-                      final isActive = _selectedVendor == vendor;
-
-                      return InkWell(
-                        onTap: () {
-                          setState(() => _selectedVendor = vendor);
-                          final module = _selectedModule;
-                          if (module != null) {
-                            SharedPreferences.getInstance().then(
-                              (prefs) =>
-                                  prefs.setString(_prefsVendor(module), vendor),
-                            );
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? const Color(0xFF3182CE)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  vendor,
-                                  style: TextStyle(
-                                    color: isActive
-                                        ? Colors.white
-                                        : const Color(0xFFE2E8F0),
-                                    fontSize: 13.5,
-                                    fontWeight: isActive
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isActive
-                                      ? Colors.white.withOpacity(0.2)
-                                      : const Color(0xFF4A5568),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  '$count',
-                                  style: TextStyle(
-                                    color: isActive
-                                        ? Colors.white
-                                        : const Color(0xFFA0AEC0),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // --- Main Content ---
+          _buildSidebar(),
           Expanded(
             child: Column(
               children: [
-                // --- Header ---
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  color: const Color(0xFF2D3748),
-                  child: Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _isRunning ? null : _pickArchive,
-                        icon: const Icon(Icons.folder_open, size: 16),
-                        label: const Text('MPTool'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF3182CE),
-                          backgroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        width: 520,
-                        child: Text(
-                          archiveText.isEmpty
-                              ? 'No archive selected'
-                              : archiveText,
-                          style: TextStyle(
-                            color: archiveText.isEmpty
-                                ? Colors.white.withOpacity(0.45)
-                                : Colors.white.withOpacity(0.9),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const Spacer(),
-                      _CompactDropdown<String>(
-                        value: _selectedModule,
-                        hintText: 'Module',
-                        items: _modules
-                            .map(
-                                (m) => _CompactDropdownItem(value: m, label: m))
-                            .toList(),
-                        onChanged: (val) {
-                          setState(() => _selectedModule = val);
-                          _loadPartNumbers();
-                        },
-                        height: 32,
-                        itemHeight: 32,
-                        backgroundColor: const Color(0xFF4A5568),
-                        borderColor: Colors.white.withOpacity(0.3),
-                        textColor: Colors.white,
-                        hintColor: Colors.white70,
-                        iconColor: Colors.white70,
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(8)),
-                        menuColor: const Color(0xFF4A5568),
-                      ),
-                    ],
+                _buildHeader(),
+                if (_isRunning)
+                  const LinearProgressIndicator(
+                    backgroundColor: _kBorder,
+                    color: _kBlue,
+                    minHeight: 2,
                   ),
-                ),
-
-                // --- Stats Bar ---
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Text('Total: ${_allPartNumbers.length}',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 24),
-                      Text(
-                          'Selected: ${_allPartNumbers.where((p) => p.isSelected).length}',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 24),
-                      Text(
-                        'Controller Type: ${_moduleCtype?.toString() ?? '-'}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 24),
-                      // Group controls
-                      OutlinedButton.icon(
-                        onPressed: _saveGroup,
-                        icon: const Icon(Icons.save, size: 16),
-                        label: const Text('Save'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF3182CE),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _CompactDropdown<String>(
-                        value: _selectedGroup,
-                        hintText: 'Load Group',
-                        items: _groups
-                            .map(
-                                (g) => _CompactDropdownItem(value: g, label: g))
-                            .toList(),
-                        onChanged: (val) {
-                          _loadGroup(val);
-                        },
-                        height: 32,
-                        itemHeight: 32,
-                        backgroundColor: Colors.white,
-                        borderColor: Colors.grey.shade300,
-                        textColor: Colors.black87,
-                        hintColor: Colors.black45,
-                        iconColor: Colors.black45,
-                        menuColor: Colors.white,
-                      ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        onPressed: _deleteGroup,
-                        icon: Icon(Icons.delete_outline,
-                            size: 18, color: Colors.grey.shade600),
-                        tooltip: 'Delete Group',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 10),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Checkbox(
-                            value: _openHtmlReport,
-                            onChanged: _isRunning
-                                ? null
-                                : (v) {
-                                    final next = v ?? false;
-                                    setState(() => _openHtmlReport = next);
-                                    SharedPreferences.getInstance().then(
-                                      (prefs) => prefs.setBool(
-                                          _prefsOpenHtmlReport, next),
-                                    );
-                                  },
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: const VisualDensity(
-                                horizontal: -4, vertical: -4),
-                          ),
-                          Text(
-                            'Report',
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () =>
-                            setState(() => _showOutput = !_showOutput),
-                        icon: Icon(
-                          _showOutput ? Icons.subject : Icons.subject_outlined,
-                          size: 18,
-                          color: Colors.grey.shade700,
-                        ),
-                        tooltip: _showOutput ? 'Hide Output' : 'Show Output',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 12),
-                      if (_isRunning)
-                        OutlinedButton.icon(
-                          onPressed: _stopRun,
-                          icon: const Icon(Icons.stop, size: 16),
-                          label: const Text('Stop'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red.shade700,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                      if (_isRunning) const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: _isRunning ? null : _runDryRun,
-                        icon: const Icon(Icons.play_arrow, size: 18),
-                        label: Text(_isRunning ? 'Running...' : 'Run Dry Run'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3182CE),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // --- Table Header ---
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                  color: const Color(0xFFE2E8F0),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 40,
-                        child: Checkbox(
-                          value: _selectAll,
-                          onChanged: (_) => _toggleSelectAll(),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _headerCell('#', 40),
-                      _headerCell('PART NUMBER', 280),
-                      _headerCell('FLASH ID', 200),
-                      _headerCell('DIE', 50, center: true),
-                      _headerCell('CELL TYPE', 70, center: true),
-                      _headerCell('PLANE', 60, center: true),
-                      const Expanded(child: _HeaderText('ALIAS')),
-                    ],
-                  ),
-                ),
-
-                // --- Data List ---
+                _buildControlsBar(),
+                _buildTableHeader(),
                 Expanded(
                   child: Column(
                     children: [
-                      Expanded(
-                        child: _isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : filtered.isEmpty
-                                ? const Center(child: Text('No data'))
-                                : ListView.builder(
-                                    itemCount: filtered.length,
-                                    itemBuilder: (context, index) {
-                                      final pn = filtered[index];
-                                      final rowKey = '${pn.flashId}|${pn.name}';
-                                      final isHovered =
-                                          _hoveredRowKey == rowKey;
-                                      final baseColor = pn.isSelected
-                                          ? const Color(0xFFEAF4FF)
-                                          : (index.isEven
-                                              ? Colors.white
-                                              : const Color(0xFFF7FAFC));
-                                      final rowColor = isHovered
-                                          ? const Color(0xFFDCEBFF)
-                                          : baseColor;
-
-                                      return MouseRegion(
-                                        onEnter: (_) => setState(
-                                            () => _hoveredRowKey = rowKey),
-                                        onExit: (_) => setState(() {
-                                          if (_hoveredRowKey == rowKey) {
-                                            _hoveredRowKey = null;
-                                          }
-                                        }),
-                                        child: GestureDetector(
-                                          behavior: HitTestBehavior.opaque,
-                                          onTap: () => _toggleSelection(index),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 24, vertical: 8),
-                                            color: rowColor,
-                                            child: Row(
-                                              children: [
-                                                SizedBox(
-                                                  width: 40,
-                                                  child: AbsorbPointer(
-                                                    child: Checkbox(
-                                                      value: pn.isSelected,
-                                                      onChanged: (_) {},
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                _dataCell('${index + 1}', 40,
-                                                    color: Colors.grey),
-                                                _dataCell(pn.name, 280,
-                                                    weight: FontWeight.w600),
-                                                _dataCell(pn.flashId, 200,
-                                                    mono: true,
-                                                    color:
-                                                        Colors.grey.shade700),
-                                                _dataCell(pn.die, 50,
-                                                    center: true),
-                                                _dataCell(pn.cellType, 70,
-                                                    center: true),
-                                                _dataCell(pn.plane, 60,
-                                                    center: true),
-                                                Expanded(
-                                                  child: Text(
-                                                    pn.alias,
-                                                    style: TextStyle(
-                                                      color:
-                                                          Colors.grey.shade600,
-                                                      fontSize: 13,
-                                                    ),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                      ),
+                      Expanded(child: _buildTable(filtered)),
                       if (_showOutput) _buildOutputPanel(),
                     ],
                   ),
@@ -1288,45 +801,540 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ─── Sidebar ──────────────────────────────────────────────────────────────
+
+  Widget _buildSidebar() {
+    return Container(
+      width: 200,
+      color: _kSidebarBg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 22, 18, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: _kBlue,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.memory_rounded, color: Colors.white, size: 19),
+                ),
+                const SizedBox(width: 11),
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('MP Dry Run',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700)),
+                    Text('Flash Config',
+                        style: TextStyle(color: Color(0xFF475569), fontSize: 11)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(18, 16, 18, 8),
+            child: Text(
+              'VENDOR',
+              style: TextStyle(
+                  color: Color(0xFF475569),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              itemCount: _vendors.length,
+              itemBuilder: (context, i) {
+                final vendor = _vendors[i];
+                final count  = vendor == 'All'
+                    ? _allPartNumbers.length
+                    : _allPartNumbers.where((p) => p.vendor == vendor).length;
+                final active = _selectedVendor == vendor;
+                return _VendorItem(
+                  vendor: vendor,
+                  count: count,
+                  active: active,
+                  onTap: () {
+                    setState(() => _selectedVendor = vendor);
+                    final mod = _selectedModule;
+                    if (mod != null) {
+                      SharedPreferences.getInstance().then(
+                        (prefs) => prefs.setString(_prefsVendor(mod), vendor),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Header ───────────────────────────────────────────────────────────────
+
+  Widget _buildHeader() {
+    final archiveText = _archivePath?.trim() ?? '';
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      color: _kHeaderBg,
+      child: Row(
+        children: [
+          _HeaderButton(
+            onPressed: _isRunning ? null : _pickArchive,
+            icon: Icons.folder_open_rounded,
+            label: 'MPTool Archive',
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.07),
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    archiveText.isEmpty
+                        ? Icons.inbox_outlined
+                        : Icons.archive_outlined,
+                    size: 14,
+                    color: archiveText.isEmpty
+                        ? Colors.white.withOpacity(0.25)
+                        : const Color(0xFF60A5FA),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      archiveText.isEmpty
+                          ? 'No archive selected — click MPTool Archive to browse'
+                          : archiveText,
+                      style: TextStyle(
+                        color: archiveText.isEmpty
+                            ? Colors.white.withOpacity(0.3)
+                            : Colors.white.withOpacity(0.85),
+                        fontSize: 12,
+                        fontFamily: archiveText.isEmpty ? null : 'Courier New',
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          _CompactDropdown<String>(
+            value: _selectedModule,
+            hintText: 'Select Module',
+            items: _modules
+                .map((m) => _CompactDropdownItem(value: m, label: m))
+                .toList(),
+            onChanged: (val) {
+              setState(() => _selectedModule = val);
+              _loadPartNumbers();
+            },
+            height: 36,
+            itemHeight: 36,
+            minWidth: 180,
+            backgroundColor: Colors.white.withOpacity(0.1),
+            borderColor: Colors.white.withOpacity(0.2),
+            textColor: Colors.white,
+            hintColor: Colors.white54,
+            iconColor: Colors.white54,
+            menuColor: const Color(0xFF1E293B),
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Controls bar ─────────────────────────────────────────────────────────
+
+  Widget _buildControlsBar() {
+    final selectedCount = _allPartNumbers.where((p) => p.isSelected).length;
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: const BoxDecoration(
+        color: _kSurface,
+        border: Border(bottom: BorderSide(color: _kBorder)),
+      ),
+      child: Row(
+        children: [
+          _StatChip(label: 'Total', value: '${_allPartNumbers.length}'),
+          const _VertDivider(),
+          _StatChip(
+            label: 'Selected',
+            value: '$selectedCount',
+            highlight: selectedCount > 0,
+          ),
+          const _VertDivider(),
+          _StatChip(
+            label: 'CType',
+            value: _moduleCtype?.toString() ?? '—',
+          ),
+          const SizedBox(width: 18),
+          // Group controls
+          _SmallButton(
+            onPressed: _saveGroup,
+            icon: Icons.bookmark_add_outlined,
+            label: 'Save',
+          ),
+          const SizedBox(width: 8),
+          _CompactDropdown<String>(
+            value: _selectedGroup,
+            hintText: 'Load Group',
+            items: _groups
+                .map((g) => _CompactDropdownItem(value: g, label: g))
+                .toList(),
+            onChanged: _loadGroup,
+            height: 30,
+            itemHeight: 32,
+            minWidth: 140,
+            backgroundColor: _kSurface,
+            borderColor: _kBorder,
+            textColor: _kTextPri,
+            hintColor: _kTextSec,
+            iconColor: _kTextSec,
+            menuColor: _kSurface,
+          ),
+          if (_selectedGroup != null) ...[
+            const SizedBox(width: 4),
+            Tooltip(
+              message: 'Delete group',
+              child: InkWell(
+                onTap: _deleteGroup,
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.delete_outline,
+                      size: 16, color: Colors.red.shade400),
+                ),
+              ),
+            ),
+          ],
+          const Spacer(),
+          // Report checkbox
+          Row(
+            children: [
+              Transform.scale(
+                scale: 0.82,
+                child: Checkbox(
+                  value: _openHtmlReport,
+                  onChanged: _isRunning
+                      ? null
+                      : (v) {
+                          final next = v ?? false;
+                          setState(() => _openHtmlReport = next);
+                          SharedPreferences.getInstance().then(
+                              (p) => p.setBool(_prefsOpenHtmlReport, next));
+                        },
+                  activeColor: _kBlue,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              const Text('HTML Report',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      color: _kTextSec,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+          const SizedBox(width: 10),
+          // Output toggle
+          Tooltip(
+            message: _showOutput ? 'Hide output' : 'Show output',
+            child: InkWell(
+              onTap: () => setState(() => _showOutput = !_showOutput),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: Icon(
+                  Icons.terminal_rounded,
+                  size: 18,
+                  color: _showOutput ? _kBlue : _kTextSec,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          if (_isRunning) ...[
+            OutlinedButton.icon(
+              onPressed: _stopRun,
+              icon: const Icon(Icons.stop_rounded, size: 15),
+              label: const Text('Stop'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red.shade600,
+                side: BorderSide(color: Colors.red.shade300),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          FilledButton.icon(
+            onPressed: _isRunning ? null : _runDryRun,
+            icon: Icon(
+              _isRunning ? Icons.hourglass_top_rounded : Icons.play_arrow_rounded,
+              size: 17,
+            ),
+            label: Text(_isRunning ? 'Running…' : 'Run Dry Run'),
+            style: FilledButton.styleFrom(
+              backgroundColor: _kBlue,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              textStyle:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Table header ─────────────────────────────────────────────────────────
+
+  Widget _buildTableHeader() {
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: const BoxDecoration(
+        color: _kMainBg,
+        border: Border(
+          top: BorderSide(color: _kBorder),
+          bottom: BorderSide(color: _kBorder),
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            child: Checkbox(
+              value: _selectAll,
+              onChanged: (_) => _toggleSelectAll(),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              activeColor: _kBlue,
+            ),
+          ),
+          const SizedBox(width: 8),
+          const _TH('#', 36),
+          const _TH('PART NUMBER', 280),
+          const _TH('FLASH ID', 190),
+          const _TH('DIE', 50, center: true),
+          const _TH('CELL TYPE', 80, center: true),
+          const _TH('PLANE', 60, center: true),
+          const Expanded(child: _TH('ALIAS', 0)),
+        ],
+      ),
+    );
+  }
+
+  // ─── Table body ───────────────────────────────────────────────────────────
+
+  Widget _buildTable(List<PartNumber> filtered) {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: _kBlue, strokeWidth: 2.5),
+            SizedBox(height: 12),
+            Text('Loading part numbers…',
+                style: TextStyle(color: _kTextSec, fontSize: 13)),
+          ],
+        ),
+      );
+    }
+    if (filtered.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.memory_outlined,
+                size: 44, color: _kTextSec.withOpacity(0.35)),
+            const SizedBox(height: 12),
+            const Text('No part numbers',
+                style: TextStyle(
+                    color: _kTextSec,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500)),
+            if (_selectedVendor != 'All') ...[
+              const SizedBox(height: 4),
+              Text('Try selecting "All" vendor',
+                  style: TextStyle(
+                      color: _kTextSec.withOpacity(0.6), fontSize: 12)),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: filtered.length,
+      itemBuilder: (context, index) {
+        final pn     = filtered[index];
+        final rowKey = '${pn.flashId}|${pn.name}';
+        final isHov  = _hoveredRowKey == rowKey;
+
+        Color rowBg;
+        if (pn.isSelected) {
+          rowBg = isHov ? _kRowHover : _kRowSel;
+        } else {
+          rowBg = isHov ? _kRowHover : (index.isEven ? _kSurface : _kRowOdd);
+        }
+
+        return MouseRegion(
+          onEnter: (_) => setState(() => _hoveredRowKey = rowKey),
+          onExit: (_) => setState(() {
+            if (_hoveredRowKey == rowKey) _hoveredRowKey = null;
+          }),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _toggleSelection(index),
+            child: Container(
+              decoration: BoxDecoration(
+                color: rowBg,
+                border: Border(
+                  left: BorderSide(
+                    color: pn.isSelected ? _kBlue : Colors.transparent,
+                    width: 3,
+                  ),
+                  bottom: const BorderSide(color: _kBorder, width: 0.5),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 8),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 40,
+                    child: AbsorbPointer(
+                      child: Checkbox(
+                        value: pn.isSelected,
+                        onChanged: (_) {},
+                        activeColor: _kBlue,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _TD('${index + 1}', 36, color: _kTextSec, size: 12),
+                  _TD(pn.name, 280, weight: FontWeight.w600),
+                  _TD(pn.flashId, 190, mono: true, color: _kTextSec, size: 12),
+                  SizedBox(
+                    width: 50,
+                    child: Center(
+                      child: Text(pn.die,
+                          style: const TextStyle(
+                              fontSize: 13, color: _kTextPri)),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 80,
+                    child: Center(
+                      child: pn.cellType.isEmpty
+                          ? const SizedBox.shrink()
+                          : _CellBadge(pn.cellType),
+                    ),
+                  ),
+                  _TD(pn.plane, 60, center: true),
+                  Expanded(
+                    child: Text(
+                      pn.alias,
+                      style: const TextStyle(
+                          color: _kTextSec, fontSize: 12.5),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ─── Output panel ─────────────────────────────────────────────────────────
+
   Widget _buildOutputPanel() {
     return Container(
-      height: 220,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        border: Border(
-          top: BorderSide(color: Colors.black.withOpacity(0.08), width: 1),
-        ),
+      height: 230,
+      decoration: const BoxDecoration(
+        color: _kTermBg,
+        border: Border(top: BorderSide(color: Color(0xFF1E293B))),
       ),
       child: Column(
         children: [
           Container(
             height: 34,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF111827),
-              border: Border(
-                bottom: BorderSide(color: Colors.white.withOpacity(0.08)),
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: const BoxDecoration(
+              color: _kTermHdr,
+              border: Border(bottom: BorderSide(color: Color(0xFF0D1117))),
             ),
             child: Row(
               children: [
+                Row(
+                  children: [
+                    _TermDot(color: Colors.red.shade400),
+                    const SizedBox(width: 5),
+                    _TermDot(color: Colors.orange.shade400),
+                    const SizedBox(width: 5),
+                    _TermDot(color: Colors.green.shade500),
+                  ],
+                ),
+                const SizedBox(width: 12),
                 Text(
-                  _isRunning ? 'Output (Running)' : 'Output',
+                  _isRunning ? 'OUTPUT — Running' : 'OUTPUT',
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
+                    color: Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
                   ),
                 ),
+                if (_isRunning) ...[
+                  const SizedBox(width: 8),
+                  const SizedBox(
+                    width: 10,
+                    height: 10,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: Color(0xFF60A5FA),
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 TextButton(
                   onPressed: () => setState(() => _runLog.clear()),
-                  child: const Text(
-                    'Clear',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
+                  child: const Text('Clear',
+                      style: TextStyle(
+                          color: Color(0xFF475569), fontSize: 11.5)),
                 ),
               ],
             ),
@@ -1334,24 +1342,23 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _runLog.isEmpty
                 ? const Center(
-                    child: Text(
-                      'No output',
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
-                    ),
+                    child: Text('No output yet',
+                        style: TextStyle(
+                            color: Color(0xFF334155), fontSize: 12)),
                   )
                 : ListView.builder(
                     controller: _logScrollController,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                     itemCount: _runLog.length,
-                    itemBuilder: (context, index) {
+                    itemBuilder: (context, i) {
+                      final line = _runLog[i];
                       return Text(
-                        _runLog[index],
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        line,
+                        style: TextStyle(
+                          color: _logColor(line),
                           fontSize: 12,
                           fontFamily: 'Courier New',
-                          height: 1.35,
+                          height: 1.55,
                         ),
                       );
                     },
@@ -1361,38 +1368,276 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
 
-  Widget _headerCell(String text, double width, {bool center = false}) {
-    return SizedBox(
-      width: width,
-      child: Text(
-        text,
-        textAlign: center ? TextAlign.center : TextAlign.left,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF718096),
-          letterSpacing: 0.5,
+// ─── Reusable widgets ─────────────────────────────────────────────────────────
+
+class _VendorItem extends StatelessWidget {
+  final String vendor;
+  final int    count;
+  final bool   active;
+  final VoidCallback onTap;
+
+  const _VendorItem({
+    required this.vendor,
+    required this.count,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(7),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(7),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            decoration: BoxDecoration(
+              color: active ? _kBlue : Colors.transparent,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    vendor,
+                    style: TextStyle(
+                      color: active ? Colors.white : const Color(0xFFCBD5E1),
+                      fontSize: 13,
+                      fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: active
+                        ? Colors.white.withOpacity(0.2)
+                        : const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      color: active ? Colors.white : const Color(0xFF64748B),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _dataCell(String text, double width,
-      {bool center = false,
-      FontWeight weight = FontWeight.normal,
-      bool mono = false,
-      Color? color}) {
+class _HeaderButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+
+  const _HeaderButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 15),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        side: BorderSide(color: Colors.white.withOpacity(0.3)),
+        backgroundColor: Colors.white.withOpacity(0.08),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool   highlight;
+
+  const _StatChip({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('$label ',
+            style: const TextStyle(
+                fontSize: 12, color: _kTextSec, fontWeight: FontWeight.w500)),
+        Text(value,
+            style: TextStyle(
+                fontSize: 13,
+                color: highlight ? _kBlue : _kTextPri,
+                fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+}
+
+class _VertDivider extends StatelessWidget {
+  const _VertDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 16,
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      color: _kBorder,
+    );
+  }
+}
+
+class _SmallButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+
+  const _SmallButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 14),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: _kTextPri,
+        side: const BorderSide(color: _kBorder),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+}
+
+class _CellBadge extends StatelessWidget {
+  final String cellType;
+  const _CellBadge(this.cellType);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _cellColors(cellType);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: c.bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        cellType,
+        style: TextStyle(
+          color: c.fg,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _TermDot extends StatelessWidget {
+  final Color color;
+  const _TermDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.7),
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+class _TH extends StatelessWidget {
+  final String text;
+  final double width;
+  final bool   center;
+
+  const _TH(this.text, this.width, {this.center = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final widget = Text(
+      text,
+      textAlign: center ? TextAlign.center : TextAlign.left,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: _kTextSec,
+        letterSpacing: 0.6,
+      ),
+    );
+    if (width == 0) return widget;
+    return SizedBox(width: width, child: widget);
+  }
+}
+
+class _TD extends StatelessWidget {
+  final String     text;
+  final double     width;
+  final bool       center;
+  final FontWeight weight;
+  final bool       mono;
+  final Color?     color;
+  final double     size;
+
+  const _TD(
+    this.text,
+    this.width, {
+    this.center = false,
+    this.weight = FontWeight.normal,
+    this.mono   = false,
+    this.color,
+    this.size   = 13,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       width: width,
       child: Text(
         text,
         textAlign: center ? TextAlign.center : TextAlign.left,
         style: TextStyle(
-          fontSize: 13.5,
+          fontSize: size,
           fontWeight: weight,
           fontFamily: mono ? 'Courier New' : null,
-          color: color ?? Colors.black87,
+          color: color ?? _kTextPri,
         ),
         overflow: TextOverflow.ellipsis,
       ),
@@ -1400,46 +1645,83 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _HeaderText extends StatelessWidget {
-  final String text;
-  const _HeaderText(this.text);
+class _AppDialog extends StatelessWidget {
+  final String         title;
+  final String?        content;
+  final Widget?        customContent;
+  final List<Widget>   actions;
+
+  const _AppDialog({
+    required this.title,
+    required this.content,
+    this.customContent,
+    required this.actions,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF718096),
-        letterSpacing: 0.5,
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 8,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: _kTextPri)),
+              const SizedBox(height: 14),
+              if (content != null)
+                Text(content!,
+                    style: const TextStyle(
+                        fontSize: 13.5, color: _kTextSec, height: 1.5)),
+              if (customContent != null) customContent!,
+              const SizedBox(height: 22),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: actions
+                    .expand((w) => [w, const SizedBox(width: 8)])
+                    .take(actions.length * 2 - 1)
+                    .toList(),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _CompactDropdownItem<T> {
-  final T value;
-  final String label;
+// ─── Compact Dropdown ─────────────────────────────────────────────────────────
 
+class _CompactDropdownItem<T> {
+  final T      value;
+  final String label;
   const _CompactDropdownItem({required this.value, required this.label});
 }
 
 class _CompactDropdown<T> extends StatelessWidget {
-  final T? value;
-  final String hintText;
+  final T?                           value;
+  final String                       hintText;
   final List<_CompactDropdownItem<T>> items;
-  final ValueChanged<T> onChanged;
-  final double height;
-  final double itemHeight;
-  final Color backgroundColor;
-  final Color borderColor;
-  final Color textColor;
-  final Color hintColor;
-  final Color iconColor;
-  final Color menuColor;
-  final double fontSize;
-  final BorderRadius borderRadius;
+  final ValueChanged<T>              onChanged;
+  final double                       height;
+  final double                       itemHeight;
+  final double                       minWidth;
+  final Color                        backgroundColor;
+  final Color                        borderColor;
+  final Color                        textColor;
+  final Color                        hintColor;
+  final Color                        iconColor;
+  final Color                        menuColor;
+  final double                       fontSize;
+  final BorderRadius                 borderRadius;
 
   const _CompactDropdown({
     required this.value,
@@ -1454,62 +1736,57 @@ class _CompactDropdown<T> extends StatelessWidget {
     required this.hintColor,
     required this.iconColor,
     required this.menuColor,
-    this.fontSize = 13,
+    this.minWidth    = 0,
+    this.fontSize    = 13,
     this.borderRadius = const BorderRadius.all(Radius.circular(6)),
   });
 
   @override
   Widget build(BuildContext context) {
     String? selected;
-    if (value != null) {
-      for (final it in items) {
-        if (it.value == value) {
-          selected = it.label;
-          break;
-        }
+    for (final it in items) {
+      if (it.value == value) {
+        selected = it.label;
+        break;
       }
     }
 
     return SizedBox(
       height: height,
       child: PopupMenuButton<T>(
-        padding: EdgeInsets.zero,
-        tooltip: '',
-        offset: Offset(0, height),
-        color: menuColor,
+        padding:   EdgeInsets.zero,
+        tooltip:   '',
+        offset:    Offset(0, height),
+        color:     menuColor,
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: borderRadius,
-          side: BorderSide(color: borderColor, width: 1),
+          side: BorderSide(color: borderColor),
         ),
         onSelected: onChanged,
-        itemBuilder: (context) {
-          return items
-              .map(
-                (it) => PopupMenuItem<T>(
-                  value: it.value,
-                  height: itemHeight,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemBuilder: (context) => items
+            .map((it) => PopupMenuItem<T>(
+                  value:   it.value,
+                  height:  itemHeight,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Text(
                     it.label,
                     style: TextStyle(
-                      fontSize: fontSize,
-                      color: textColor,
-                      fontWeight: FontWeight.w500,
-                    ),
+                        fontSize: fontSize,
+                        color: textColor,
+                        fontWeight: FontWeight.w500),
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              )
-              .toList();
-        },
+                ))
+            .toList(),
         child: Container(
           height: height,
+          constraints: minWidth > 0 ? BoxConstraints(minWidth: minWidth) : null,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color:        backgroundColor,
             borderRadius: borderRadius,
-            border: Border.all(color: borderColor, width: 1),
+            border:       Border.all(color: borderColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1517,14 +1794,14 @@ class _CompactDropdown<T> extends StatelessWidget {
               Text(
                 selected ?? hintText,
                 style: TextStyle(
-                  fontSize: fontSize,
-                  color: selected == null ? hintColor : textColor,
-                  fontWeight: FontWeight.w600,
+                  fontSize:   fontSize,
+                  color:      selected == null ? hintColor : textColor,
+                  fontWeight: FontWeight.w500,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(width: 6),
-              Icon(Icons.expand_more, size: 18, color: iconColor),
+              Icon(Icons.expand_more_rounded, size: 17, color: iconColor),
             ],
           ),
         ),

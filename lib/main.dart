@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
       title: 'DryRunUI Flutter',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3182CE)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3B82F6)),
         useMaterial3: true,
       ),
       home: const HomeScreen(),
