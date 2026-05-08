@@ -458,6 +458,15 @@ def main():
                     ctype=args.ctype,
                 )
 
+                dump_dir = collect_dump(
+                    mptool_exe,
+                    config_file,
+                    device_file,
+                    vendor,
+                    output_base,
+                    cli_version_text,
+                )
+
                 print(
                     "@@DRYRUN_RUN "
                     + json.dumps(
@@ -465,6 +474,7 @@ def main():
                             "device": device_file.name,
                             "config": config_file.name,
                             "exit_code": returncode,
+                            "dump_dir": str(dump_dir) if dump_dir else "",
                         },
                         ensure_ascii=False,
                     )
@@ -474,15 +484,6 @@ def main():
                     print(stdout_text.rstrip("\n"))
                 if stderr_text.strip():
                     print(stderr_text.rstrip("\n"))
-
-                dump_dir = collect_dump(
-                    mptool_exe,
-                    config_file,
-                    device_file,
-                    vendor,
-                    output_base,
-                    cli_version_text,
-                )
 
                 results.append({
                     "device": device_file.name,

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/part_number.dart';
 import '../services/module_service.dart';
 import '../services/group_service.dart';
+import 'report_shell.dart';
 
 // ─── Palette ─────────────────────────────────────────────────────────────────
 const _kSidebarBg = Color(0xFF0F172A);
@@ -422,129 +423,157 @@ class _HomeScreenState extends State<HomeScreen> {
     _activeProcess?.kill(ProcessSignal.sigkill);
   }
 
-  Future<void> _generateAndOpenHtmlReport(
+  // ─── CardRegisters → structured JSON ─────────────────────────────────────
+
+  static List<Map<String, dynamic>> _parseCardRegistersToJson(String raw) {
+    final lines    = raw.split(RegExp(r'\r?\n'));
+    final sections = <Map<String, dynamic>>[];
+    String title   = '';
+    final hexBuf   = <String>[];
+    final fields   = <Map<String, dynamic>>[];
+    bool pastDash  = false;
+    bool inHex     = false;
+
+    void flush() {
+      if (title.isNotEmpty || hexBuf.isNotEmpty || fields.isNotEmpty) {
+        sections.add({'title': title, 'hex': List<String>.from(hexBuf), 'fields': List<Map<String, dynamic>>.from(fields)});
+      }
+      title = ''; hexBuf.clear(); fields.clear(); pastDash = false; inHex = false;
+    }
+
+    final hexRe = RegExp(r'^[0-9a-fA-F]{2}( [0-9a-fA-F]{2})*\s*$');
+    for (final line in lines) {
+      final t = line.trim();
+      if (t.isEmpty)             { flush(); continue; }
+      if (t.startsWith('---'))   { pastDash = true; inHex = true; continue; }
+      if (!pastDash)             { title = t; continue; }
+      if (inHex && hexRe.hasMatch(t)) { hexBuf.add(t); continue; }
+      inHex = false;
+      final eq = t.indexOf('=');
+      if (eq > 0) {
+        fields.add({'type': 'kv', 'key': t.substring(0, eq).trim(), 'value': t.substring(eq + 1).trim()});
+      } else if (t.endsWith(':')) {
+        fields.add({'type': 'subheader', 'key': t});
+      } else {
+        fields.add({'type': 'list', 'value': t});
+      }
+    }
+    flush();
+    return sections;
+  }
+
+  // ─── Report generator (JSON/JS data + HTML shell) ─────────────────────────
+
+  Future<void> _generateReport(
     String archivePath,
     List<String> targets,
     Map<String, int> exitCodes,
     Map<String, Map<String, int>> deviceExitCodesByTarget,
+    Map<String, Map<String, List<String>>> outputByTargetByRun,
+    Map<String, Map<String, String>> dumpDirByTargetByRun,
+    Map<String, PartNumber> targetMeta,
   ) async {
-    final now       = DateTime.now();
-    final safeTime  = now.toIso8601String().replaceAll(':', '-');
-    final fileName  = 'dryrun_report_$safeTime.html';
+    final now         = DateTime.now();
+    final archiveName = p.basename(archivePath);
+    final archiveStem = p.basenameWithoutExtension(archiveName);
+    final safeName    = archiveStem
+        .replaceAll(RegExp(r'[^\w.]'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+
     final reportsDir = Directory(p.join(_exeDirPath, 'Reports'));
     if (!reportsDir.existsSync()) reportsDir.createSync(recursive: true);
-    final reportFile = File(p.join(reportsDir.path, fileName));
 
-    const escape      = HtmlEscape();
-    final moduleName  = _selectedModule ?? '';
-    final ctypeText   = _moduleCtype?.toString() ?? '-';
-    final archiveName = p.basename(archivePath);
-
-    final rows = <String>[];
-    int passCount = 0;
-    int failCount = 0;
+    // Build target data list
+    final targetList = <Map<String, dynamic>>[];
     for (final t in targets) {
-      final code      = exitCodes[t] ?? -9999;
-      final ok        = code == 0;
-      ok ? passCount++ : failCount++;
-      final deviceMap = deviceExitCodesByTarget[t] ?? const <String, int>{};
-      final deviceNames = deviceMap.keys.toList()..sort();
-      final deviceRows = deviceNames.map((dev) {
-        final dcode = deviceMap[dev] ?? -9999;
-        final dok   = dcode == 0;
-        return '''
-              <tr class="${dok ? 'pass' : 'fail'}">
-                <td>${escape.convert(dev)}</td>
-                <td>${dok ? 'PASS' : 'FAIL'}</td>
-                <td>${escape.convert(dcode.toString())}</td>
-              </tr>''';
-      }).join('\n');
-      final deviceDetails = deviceNames.isEmpty
-          ? ''
-          : '''
-            <details>
-              <summary>Device Results</summary>
-              <table class="sub">
-                <thead><tr><th>Device</th><th>Status</th><th>Exit Code</th></tr></thead>
-                <tbody>$deviceRows</tbody>
-              </table>
-            </details>''';
-      rows.add('''
-        <tr class="${ok ? 'pass' : 'fail'}">
-          <td>${escape.convert(t)}</td>
-          <td>${ok ? 'PASS' : 'FAIL'}</td>
-          <td>${escape.convert(code.toString())}</td>
-          <td>$deviceDetails</td>
-        </tr>''');
+      final devMap  = deviceExitCodesByTarget[t] ?? {};
+      final outMap  = outputByTargetByRun[t] ?? {};
+      final dumpMap = dumpDirByTargetByRun[t] ?? {};
+      final runKeys = devMap.keys.toList()..sort();
+      final runs    = <Map<String, dynamic>>[];
+      for (final rk in runKeys) {
+        final rCode  = devMap[rk] ?? -9999;
+        final output = (outMap[rk] ?? []).where((l) => l.trim().isNotEmpty).toList();
+        var crSections = <Map<String, dynamic>>[];
+        final dumpDir = dumpMap[rk] ?? '';
+        if (dumpDir.isNotEmpty) {
+          final crFile = File(p.join(dumpDir, 'CardRegisters.txt'));
+          if (crFile.existsSync()) {
+            try { crSections = _parseCardRegistersToJson(crFile.readAsStringSync(encoding: utf8)); }
+            catch (_) {}
+          }
+        }
+        runs.add({'key': rk, 'exitCode': rCode, 'output': output, 'cardRegisters': crSections});
+      }
+      final meta = targetMeta[t];
+      targetList.add({
+        'name':     t,
+        'exitCode': exitCodes[t] ?? -9999,
+        'flashId':  meta?.flashId  ?? '',
+        'die':      meta?.die      ?? '',
+        'cellType': meta?.cellType ?? '',
+        'plane':    meta?.plane    ?? '',
+        'alias':    meta?.alias    ?? '',
+        'runs':     runs,
+      });
     }
 
-    final html = '''
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>DryRun Report</title>
-  <style>
-    body{font-family:Segoe UI,Arial,sans-serif;margin:24px;background:#f8fafc;color:#0f172a}
-    .meta{display:grid;grid-template-columns:max-content 1fr;gap:8px 16px;margin:0 0 16px 0}
-    .meta div{padding:2px 0}
-    .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-weight:700;font-size:12px}
-    .badge.pass{background:#dcfce7;color:#166534}
-    .badge.fail{background:#fee2e2;color:#991b1b}
-    table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
-    th,td{padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;vertical-align:top}
-    th{background:#f1f5f9;text-align:left;font-weight:800;color:#334155}
-    tr.pass td:nth-child(2){color:#166534;font-weight:800}
-    tr.fail td:nth-child(2){color:#991b1b;font-weight:800}
-    details{margin:2px 0}
-    summary{cursor:pointer;color:#334155;font-weight:700}
-    table.sub{width:100%;border-collapse:collapse;margin-top:8px;border:1px solid #e2e8f0}
-    table.sub th,table.sub td{padding:8px 10px;font-size:12px}
-    table.sub th{background:#f8fafc}
-    .footer{margin-top:14px;color:#64748b;font-size:12px}
-  </style>
-</head>
-<body>
-  <h2 style="margin:0 0 12px 0;">DryRun Report</h2>
-  <div class="meta">
-    <div><b>Time</b></div><div>${escape.convert(now.toString())}</div>
-    <div><b>Module</b></div><div>${escape.convert(moduleName)}</div>
-    <div><b>Controller Type</b></div><div>${escape.convert(ctypeText)}</div>
-    <div><b>Archive</b></div><div>${escape.convert(archiveName)}</div>
-    <div><b>Result</b></div>
-    <div>
-      <span class="badge pass">PASS ${escape.convert(passCount.toString())}</span>
-      <span style="display:inline-block;width:8px"></span>
-      <span class="badge fail">FAIL ${escape.convert(failCount.toString())}</span>
-    </div>
-  </div>
-  <table>
-    <thead>
-      <tr><th>Target</th><th>Status</th><th>Exit Code</th><th>Details</th></tr>
-    </thead>
-    <tbody>${rows.join('\n')}</tbody>
-  </table>
-  <div class="footer">Dump folder: ${escape.convert(p.join(_exeDirPath, 'Dump'))}</div>
-</body>
-</html>
-''';
+    final reportData = <String, dynamic>{
+      'key':      archiveStem,
+      'time':     now.toIso8601String(),
+      'module':   _selectedModule ?? '',
+      'ctype':    _moduleCtype?.toString() ?? '-',
+      'archive':  archiveName,
+      'dumpBase': p.join(_exeDirPath, 'Dump'),
+      'targets':  targetList,
+    };
 
-    await reportFile.writeAsString(html, encoding: utf8);
-    _appendLog('[Info] Report: ${reportFile.path}');
+    // Write JSONP data file: <safeName>.js
+    final jsFile = File(p.join(reportsDir.path, '$safeName.js'));
+    await jsFile.writeAsString(
+      'window.DRYRUN_REPORTS=window.DRYRUN_REPORTS||{};\n'
+      'window.DRYRUN_REPORTS[${jsonEncode(archiveStem)}]=${jsonEncode(reportData)};\n',
+      encoding: utf8,
+    );
+    _appendLog('[Info] Report data: ${jsFile.path}');
+
+    // Scan Reports/ for all .js files (newest first by mtime)
+    final jsFiles = reportsDir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.js'))
+        .toList()
+      ..sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+
+    final scriptTags = jsFiles
+        .map((f) => '  <script src="${p.basename(f.path)}"></script>')
+        .join('\n');
+
+    // Write index.html (shell + dynamic script list)
+    final indexFile = File(p.join(reportsDir.path, 'index.html'));
+    await indexFile.writeAsString(
+      kReportShellHtml.replaceFirst('<!-- REPORT_SCRIPTS -->', scriptTags),
+      encoding: utf8,
+    );
+    _appendLog('[Info] Report index: ${indexFile.path}');
 
     try {
       if (Platform.isWindows) {
-        await Process.start('cmd', ['/c', 'start', '', reportFile.path],
+        await Process.start('cmd', ['/c', 'start', '', indexFile.path],
             runInShell: true, workingDirectory: _exeDirPath);
       } else if (Platform.isMacOS) {
-        await Process.start('open', [reportFile.path]);
+        await Process.start('open', [indexFile.path]);
       } else if (Platform.isLinux) {
-        await Process.start('xdg-open', [reportFile.path]);
+        await Process.start('xdg-open', [indexFile.path]);
       }
     } catch (e) {
       _appendLog('[Error] Open report failed: $e');
     }
+  }
+
+  Future<void> _openExeDir() async {
+    await Process.start('explorer.exe', [_exeDirPath], runInShell: false);
   }
 
   Future<void> _runDryRun() async {
@@ -566,12 +595,15 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final targetSet = <String>{};
+    final targetSet  = <String>{};
+    final targetMeta = <String, PartNumber>{};
     for (final pn in selected) {
       final vendor = pn.vendor.trim();
       final dirPn  = pn.dirPn.trim().isNotEmpty ? pn.dirPn.trim() : pn.name.trim();
       if (vendor.isEmpty || dirPn.isEmpty) continue;
-      targetSet.add('$vendor/$dirPn');
+      final key = '$vendor/$dirPn';
+      targetSet.add(key);
+      targetMeta.putIfAbsent(key, () => pn);
     }
 
     if (targetSet.isEmpty) {
@@ -600,11 +632,13 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    final module = _selectedModule;
+    if (module == null) return;
     final devicesDirRel = _findExistingDirRelPath(
-        const ['DryRunUI/GeneratedDevices', 'GeneratedDevices']);
+        ['Modules/$module/Recipes']);
     if (devicesDirRel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('GeneratedDevices directory not found — cannot run dry run')),
+        SnackBar(content: Text('Modules/$module/Recipes not found — cannot run dry run')),
       );
       return;
     }
@@ -652,6 +686,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final exitCodes               = <String, int>{};
     final deviceExitCodesByTarget = <String, Map<String, int>>{};
+    final outputByTargetByRun     = <String, Map<String, List<String>>>{};
+    final dumpDirByTargetByRun    = <String, Map<String, String>>{};
 
     try {
       int idx = 0;
@@ -684,23 +720,39 @@ class _HomeScreenState extends State<HomeScreen> {
         final stdoutDone = Completer<void>();
         final stderrDone = Completer<void>();
         deviceExitCodesByTarget[target] = {};
+        outputByTargetByRun[target]     = {};
+        dumpDirByTargetByRun[target]    = {};
+        String? currentRunKey;
 
         void handleLine(String line) {
           if (line.startsWith('@@DRYRUN_RUN ')) {
             try {
               final obj = jsonDecode(line.substring('@@DRYRUN_RUN '.length))
                   as Map<String, dynamic>;
-              final dev  = (obj['device'] ?? '').toString();
-              final exit = int.tryParse((obj['exit_code'] ?? '').toString()) ?? -9999;
+              final dev     = (obj['device']   ?? '').toString();
+              final config  = (obj['config']   ?? '').toString();
+              final exit    = int.tryParse((obj['exit_code'] ?? '').toString()) ?? -9999;
+              final dumpDir = (obj['dump_dir'] ?? '').toString();
               if (dev.isNotEmpty) {
-                final cur = deviceExitCodesByTarget[target]![dev];
+                final runKey = config.isNotEmpty ? '$dev + $config' : dev;
+                final cur = deviceExitCodesByTarget[target]![runKey];
                 if (cur == null) {
-                  deviceExitCodesByTarget[target]![dev] = exit;
+                  deviceExitCodesByTarget[target]![runKey] = exit;
                 } else if (cur == 0 && exit != 0) {
-                  deviceExitCodesByTarget[target]![dev] = exit;
+                  deviceExitCodesByTarget[target]![runKey] = exit;
+                }
+                currentRunKey = runKey;
+                outputByTargetByRun[target]![runKey] = [];
+                if (dumpDir.isNotEmpty) {
+                  dumpDirByTargetByRun[target]![runKey] = dumpDir;
                 }
               }
             } catch (_) {}
+          } else {
+            if (currentRunKey != null) {
+              outputByTargetByRun[target]![currentRunKey!] ??= [];
+              outputByTargetByRun[target]![currentRunKey!]!.add(line);
+            }
           }
           _appendLog(line);
         }
@@ -726,8 +778,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (_openHtmlReport && !_stopRequested && exitCodes.isNotEmpty) {
-        await _generateAndOpenHtmlReport(
-            archivePath, targets, exitCodes, deviceExitCodesByTarget);
+        await _generateReport(
+            archivePath, targets, exitCodes, deviceExitCodesByTarget,
+            outputByTargetByRun, dumpDirByTargetByRun, targetMeta);
       }
     } catch (e) {
       _appendLog('[Error] $e');
@@ -1075,6 +1128,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(width: 10),
+          Tooltip(
+            message: 'Open exe directory',
+            child: InkWell(
+              onTap: _openExeDir,
+              borderRadius: BorderRadius.circular(6),
+              child: const Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(Icons.folder_open_rounded, size: 18, color: _kTextSec),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
           if (_isRunning) ...[
             OutlinedButton.icon(
               onPressed: _stopRun,
@@ -1207,10 +1272,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onExit: (_) => setState(() {
             if (_hoveredRowKey == rowKey) _hoveredRowKey = null;
           }),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _toggleSelection(index),
-            child: Container(
+          child: Container(
               decoration: BoxDecoration(
                 color: rowBg,
                 border: Border(
@@ -1226,13 +1288,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   SizedBox(
                     width: 40,
-                    child: AbsorbPointer(
-                      child: Checkbox(
-                        value: pn.isSelected,
-                        onChanged: (_) {},
-                        activeColor: _kBlue,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
+                    child: Checkbox(
+                      value: pn.isSelected,
+                      onChanged: (_) => _toggleSelection(index),
+                      activeColor: _kBlue,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1267,7 +1327,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-          ),
         );
       },
     );
