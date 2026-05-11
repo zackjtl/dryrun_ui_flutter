@@ -32,7 +32,7 @@ const _vendorOrder = [
 ];
 
 const _defaultModulesSourcePath =
-    r'O:\PRD-(產品研發處)-MPTool\Utility\MPDryRunModules\Modules';
+    r'O:\PRD-(產品研發處)-MPTool\Utility\MPDryRunModules\Modules.7z';
 
 Color _logColor(String line) {
   if (line.startsWith('====='))        return const Color(0xFF60A5FA);
@@ -64,9 +64,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _prefsArchivePath   = 'dryrun_ui.archive_path';
-  static const _prefsSelectedGroup = 'dryrun_ui.selected_group';
-  static const _prefsOpenHtmlReport = 'dryrun_ui.open_html_report';
+  static const _prefsArchivePath     = 'dryrun_ui.archive_path';
+  static const _prefsSelectedModule  = 'dryrun_ui.selected_module';
+  static const _prefsSelectedGroup   = 'dryrun_ui.selected_group';
+  static const _prefsOpenHtmlReport  = 'dryrun_ui.open_html_report';
+  static const _prefsSharedReportDir = 'dryrun_ui.shared_report_dir';
   static String _prefsVendor(String module) => 'dryrun_ui.vendor.$module';
 
   List<String>    _modules        = [];
@@ -82,9 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String?      _selectedGroup;
 
   String? _archivePath;
+  String? _sharedReportDir;
   bool    _isRunning      = false;
   bool    _showOutput     = true;
   bool    _openHtmlReport = false;
+  double  _outputHeight   = 230;
   String? _hoveredRowKey;
 
   final List<String>     _runLog           = [];
@@ -123,9 +127,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── Init ─────────────────────────────────────────────────────────────────
 
   Future<void> _init() async {
-    final prefs         = await SharedPreferences.getInstance();
-    final archivePath   = prefs.getString(_prefsArchivePath);
+    final prefs          = await SharedPreferences.getInstance();
+    final archivePath    = prefs.getString(_prefsArchivePath);
     final openHtmlReport = prefs.getBool(_prefsOpenHtmlReport) ?? false;
+    final sharedReportDir = prefs.getString(_prefsSharedReportDir);
+    final savedModule    = prefs.getString(_prefsSelectedModule);
     final archiveOk = archivePath != null &&
         archivePath.trim().isNotEmpty &&
         File(archivePath).existsSync();
@@ -133,8 +139,10 @@ class _HomeScreenState extends State<HomeScreen> {
       await prefs.remove(_prefsArchivePath);
     }
     setState(() {
-      _archivePath    = archiveOk ? archivePath : null;
-      _openHtmlReport = openHtmlReport;
+      _archivePath      = archiveOk ? archivePath : null;
+      _openHtmlReport   = openHtmlReport;
+      _sharedReportDir  = sharedReportDir;
+      _selectedModule   = savedModule;
     });
     await _ensureModulesAvailableOnStartup();
     await _loadModules();
@@ -150,18 +158,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => _AppDialog(
-        title: 'Modules not found',
-        content: 'Local Modules folder is missing or empty.\n\n'
-            'Source:\n$_defaultModulesSourcePath\n\n'
-            'Destination:\n${ModuleService.modulesDirPath}',
+        title: '找不到 Modules',
+        content: '本機 Modules 資料夾不存在或為空。\n\n'
+            '將從以下路徑解壓縮：\n$_defaultModulesSourcePath\n\n'
+            '目標資料夾：\n${ModuleService.modulesDirPath}',
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: const Text('取消'),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Load'),
+            child: const Text('安裝'),
           ),
         ],
       ),
@@ -171,22 +179,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await ModuleService.copyModulesFrom(_defaultModulesSourcePath);
+      await ModuleService.extractModulesFrom7z(_defaultModulesSourcePath);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Modules loaded successfully')),
+        const SnackBar(content: Text('Modules 安裝完成')),
       );
     } catch (e) {
       if (!mounted) return;
       await showDialog<void>(
         context: context,
         builder: (ctx) => _AppDialog(
-          title: 'Load failed',
+          title: '安裝失敗',
           content: e.toString(),
           actions: [
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
+              child: const Text('確定'),
             ),
           ],
         ),
@@ -201,6 +209,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     setState(() {
       _modules = modules;
+      if (_selectedModule != null && !modules.contains(_selectedModule)) {
+        _selectedModule = null;
+      }
       if (_selectedModule == null && modules.isNotEmpty) {
         _selectedModule = modules.first;
       }
@@ -238,8 +249,12 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── Group methods ────────────────────────────────────────────────────────
 
   Future<void> _loadGroups() async {
-    final groups    = await GroupService.listGroups();
-    final prefs     = await SharedPreferences.getInstance();
+    if (_selectedModule == null) {
+      setState(() { _groups = []; _selectedGroup = null; });
+      return;
+    }
+    final groups     = await GroupService.listGroups(_selectedModule!);
+    final prefs      = await SharedPreferences.getInstance();
     final savedGroup = prefs.getString(_prefsSelectedGroup);
     setState(() {
       _groups        = groups;
@@ -291,13 +306,14 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
     if (name == null || name.trim().isEmpty) return;
-    await GroupService.saveGroup(name.trim(), _allPartNumbers);
+    if (_selectedModule == null) return;
+    await GroupService.saveGroup(_selectedModule!, name.trim(), _allPartNumbers);
     _loadGroups();
   }
 
   Future<void> _loadGroup(String? name) async {
-    if (name == null || name.isEmpty) return;
-    final selections = await GroupService.loadGroupSelections(name);
+    if (name == null || name.isEmpty || _selectedModule == null) return;
+    final selections = await GroupService.loadGroupSelections(_selectedModule!, name);
     if (selections.isEmpty) return;
     setState(() {
       _allPartNumbers = GroupService.applySelections(_allPartNumbers, selections);
@@ -305,6 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsSelectedGroup, name);
+    _refreshSelectionLog();
   }
 
   Future<void> _deleteGroup() async {
@@ -328,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     if (confirmed != true) return;
-    await GroupService.deleteGroup(_selectedGroup!);
+    await GroupService.deleteGroup(_selectedModule!, _selectedGroup!);
     final prefs     = await SharedPreferences.getInstance();
     final savedGroup = prefs.getString(_prefsSelectedGroup);
     if (savedGroup == _selectedGroup) await prefs.remove(_prefsSelectedGroup);
@@ -481,7 +498,9 @@ class _HomeScreenState extends State<HomeScreen> {
         .replaceAll(RegExp(r'_+'), '_')
         .replaceAll(RegExp(r'^_|_$'), '');
 
-    final reportsDir = Directory(p.join(_exeDirPath, 'Reports'));
+    final reportsDir = Directory(
+      _sharedReportDir ?? p.join(p.dirname(archivePath), 'DryRun Report'),
+    );
     if (!reportsDir.existsSync()) reportsDir.createSync(recursive: true);
 
     // Build target data list
@@ -538,25 +557,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     _appendLog('[Info] Report data: ${jsFile.path}');
 
-    // Scan Reports/ for all .js files (newest first by mtime)
+    // Scan Reports/ for all report .js files (exclude manifest.js), newest first
     final jsFiles = reportsDir
         .listSync()
         .whereType<File>()
-        .where((f) => f.path.endsWith('.js'))
+        .where((f) => f.path.endsWith('.js') && p.basename(f.path) != 'manifest.js')
         .toList()
       ..sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
 
-    final scriptTags = jsFiles
-        .map((f) => '  <script src="${p.basename(f.path)}"></script>')
-        .join('\n');
-
-    // Write index.html (shell + dynamic script list)
-    final indexFile = File(p.join(reportsDir.path, 'index.html'));
-    await indexFile.writeAsString(
-      kReportShellHtml.replaceFirst('<!-- REPORT_SCRIPTS -->', scriptTags),
+    // Write manifest.js
+    final manifestFile = File(p.join(reportsDir.path, 'manifest.js'));
+    final manifestList = jsFiles.map((f) => p.basename(f.path)).toList();
+    await manifestFile.writeAsString(
+      'window.DRYRUN_MANIFEST=${jsonEncode(manifestList)};\n',
       encoding: utf8,
     );
+    _appendLog('[Info] Manifest: ${manifestFile.path}');
+
+    // Always overwrite index.html so template changes take effect
+    final indexFile = File(p.join(reportsDir.path, 'index.html'));
+    await indexFile.writeAsString(kReportShellHtml, encoding: utf8);
     _appendLog('[Info] Report index: ${indexFile.path}');
+    final pyFile = File(p.join(reportsDir.path, 'update_manifest.py'));
+    if (!pyFile.existsSync()) {
+      await pyFile.writeAsString(kUpdateManifestPy, encoding: utf8);
+    }
+    final batFile = File(p.join(reportsDir.path, 'update_manifest.bat'));
+    if (!batFile.existsSync()) {
+      await batFile.writeAsString(kUpdateManifestBat, encoding: utf8);
+    }
 
     try {
       if (Platform.isWindows) {
@@ -572,8 +601,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _openExeDir() async {
-    await Process.start('explorer.exe', [_exeDirPath], runInShell: false);
+  Future<void> _openReportDir() async {
+    final dir = _sharedReportDir ??
+        (_archivePath != null
+            ? p.join(p.dirname(_archivePath!), 'DryRun Report')
+            : null);
+    if (dir == null) return;
+    await Process.start('explorer.exe', [dir], runInShell: false);
+  }
+
+  Future<void> _pickSharedReportDir() async {
+    final dir = await getDirectoryPath(initialDirectory: _sharedReportDir);
+    if (dir == null) return;
+    setState(() => _sharedReportDir = dir);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsSharedReportDir, dir);
+  }
+
+  Future<void> _clearSharedReportDir() async {
+    setState(() => _sharedReportDir = null);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsSharedReportDir);
   }
 
   Future<void> _runDryRun() async {
@@ -801,6 +849,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return pn;
       }).toList();
     });
+    _refreshSelectionLog();
   }
 
   void _toggleSelectAll() {
@@ -813,6 +862,29 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         return pn;
       }).toList();
+    });
+    _refreshSelectionLog();
+  }
+
+  void _refreshSelectionLog() {
+    if (_isRunning) return;
+    final selected = _allPartNumbers.where((p) => p.isSelected).toList();
+    final lines = <String>[
+      '===== Selected Part Numbers (${selected.length}) =====',
+    ];
+    for (final pn in selected) {
+      final extra = [
+        if (pn.flashId.isNotEmpty) pn.flashId,
+        if (pn.die.isNotEmpty) '${pn.die} Die',
+        if (pn.cellType.isNotEmpty) pn.cellType,
+      ].join('  ');
+      lines.add('  ${pn.vendor.isNotEmpty ? "${pn.vendor}/" : ""}${pn.name}'
+          '${extra.isNotEmpty ? "  —  $extra" : ""}');
+    }
+    setState(() {
+      _runLog
+        ..clear()
+        ..addAll(lines);
     });
   }
 
@@ -867,25 +939,28 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.fromLTRB(18, 22, 18, 8),
             child: Row(
               children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: _kBlue,
-                    borderRadius: BorderRadius.circular(9),
+                GestureDetector(
+                  onDoubleTap: () => Process.start('explorer.exe', [_exeDirPath], runInShell: false),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: _kBlue,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: const Icon(Icons.memory_rounded, color: Colors.white, size: 19),
                   ),
-                  child: const Icon(Icons.memory_rounded, color: Colors.white, size: 19),
                 ),
                 const SizedBox(width: 11),
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('MP Dry Run',
+                    Text('SD MPTool',
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 14.5,
                             fontWeight: FontWeight.w700)),
-                    Text('Flash Config',
+                    Text('Dry Run Launcher',
                         style: TextStyle(color: Color(0xFF475569), fontSize: 11)),
                   ],
                 ),
@@ -952,7 +1027,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Container(
+            child: Tooltip(
+              message: archiveText.isEmpty ? '' : archiveText,
+              preferBelow: true,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B).withOpacity(0.92),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              textStyle: const TextStyle(
+                color: Color(0xFFCBD5E1),
+                fontSize: 12,
+                fontFamily: 'Courier New',
+              ),
+              child: Container(
               height: 34,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
@@ -990,6 +1077,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+            ),
           ),
           const SizedBox(width: 16),
           _CompactDropdown<String>(
@@ -998,8 +1086,14 @@ class _HomeScreenState extends State<HomeScreen> {
             items: _modules
                 .map((m) => _CompactDropdownItem(value: m, label: m))
                 .toList(),
-            onChanged: (val) {
+            onChanged: (val) async {
               setState(() => _selectedModule = val);
+              final prefs = await SharedPreferences.getInstance();
+              if (val != null) {
+                await prefs.setString(_prefsSelectedModule, val);
+              } else {
+                await prefs.remove(_prefsSelectedModule);
+              }
               _loadPartNumbers();
             },
             height: 36,
@@ -1110,6 +1204,39 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.w500)),
             ],
           ),
+          const SizedBox(width: 6),
+          // Shared report folder button
+          Tooltip(
+            message: _sharedReportDir != null
+                ? 'Shared report folder:\n$_sharedReportDir'
+                : 'Shared report folder: <archive dir>/DryRun Report (default)\nClick to set custom folder',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InkWell(
+                  onTap: _pickSharedReportDir,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: Icon(
+                      Icons.folder_shared_outlined,
+                      size: 18,
+                      color: _sharedReportDir != null ? _kBlue : _kTextSec,
+                    ),
+                  ),
+                ),
+                if (_sharedReportDir != null)
+                  InkWell(
+                    onTap: _clearSharedReportDir,
+                    borderRadius: BorderRadius.circular(4),
+                    child: const Padding(
+                      padding: EdgeInsets.all(3),
+                      child: Icon(Icons.close, size: 12, color: _kTextSec),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           const SizedBox(width: 10),
           // Output toggle
           Tooltip(
@@ -1129,13 +1256,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(width: 10),
           Tooltip(
-            message: 'Open exe directory',
+            message: 'Open report directory',
             child: InkWell(
-              onTap: _openExeDir,
+              onTap: (_sharedReportDir != null || _archivePath != null)
+                  ? _openReportDir
+                  : null,
               borderRadius: BorderRadius.circular(6),
-              child: const Padding(
-                padding: EdgeInsets.all(5),
-                child: Icon(Icons.folder_open_rounded, size: 18, color: _kTextSec),
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: Icon(Icons.folder_open_rounded, size: 18,
+                    color: (_sharedReportDir != null || _archivePath != null)
+                        ? _kTextSec
+                        : _kTextSec.withOpacity(0.3)),
               ),
             ),
           ),
@@ -1335,11 +1467,36 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── Output panel ─────────────────────────────────────────────────────────
 
   Widget _buildOutputPanel() {
-    return Container(
-      height: 230,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── resize handle ──────────────────────────────────────────────
+        MouseRegion(
+          cursor: SystemMouseCursors.resizeRow,
+          child: GestureDetector(
+            onVerticalDragUpdate: (d) => setState(() {
+              _outputHeight = (_outputHeight - d.delta.dy).clamp(80.0, 700.0);
+            }),
+            child: Container(
+              height: 6,
+              color: const Color(0xFF0F172A),
+              alignment: Alignment.center,
+              child: Container(
+                width: 36,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF334155),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+        ),
+        // ── panel body ─────────────────────────────────────────────────
+        Container(
+      height: _outputHeight,
       decoration: const BoxDecoration(
         color: _kTermBg,
-        border: Border(top: BorderSide(color: Color(0xFF1E293B))),
       ),
       child: Column(
         children: [
@@ -1399,32 +1556,37 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Expanded(
-            child: _runLog.isEmpty
-                ? const Center(
-                    child: Text('No output yet',
-                        style: TextStyle(
-                            color: Color(0xFF334155), fontSize: 12)),
-                  )
-                : ListView.builder(
-                    controller: _logScrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                    itemCount: _runLog.length,
-                    itemBuilder: (context, i) {
-                      final line = _runLog[i];
-                      return Text(
-                        line,
-                        style: TextStyle(
-                          color: _logColor(line),
-                          fontSize: 12,
-                          fontFamily: 'Courier New',
-                          height: 1.55,
-                        ),
-                      );
-                    },
-                  ),
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+              child: _runLog.isEmpty
+                  ? const Center(
+                      child: Text('No output yet',
+                          style: TextStyle(
+                              color: Color(0xFF334155), fontSize: 12)),
+                    )
+                  : ListView.builder(
+                      controller: _logScrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                      itemCount: _runLog.length,
+                      itemBuilder: (context, i) {
+                        final line = _runLog[i];
+                        return SelectableText(
+                          line,
+                          style: TextStyle(
+                            color: _logColor(line),
+                            fontSize: 12,
+                            fontFamily: 'Courier New',
+                            height: 1.55,
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),
+        ),
+      ],
     );
   }
 }

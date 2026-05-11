@@ -1,64 +1,61 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import '../models/part_number.dart';
 
 class GroupService {
-  static String get _exeDir {
-    return File(Platform.resolvedExecutable).parent.path;
-  }
+  static String get _exeDir =>
+      File(Platform.resolvedExecutable).parent.path;
 
-  static Directory get _groupsDir => Directory('$_exeDir/Groups');
+  static Directory _savedDataDir(String module) =>
+      Directory(p.join(_exeDir, 'Modules', module, 'SavedData'));
 
-  static Future<void> ensureDir() async {
-    if (!await _groupsDir.exists()) {
-      await _groupsDir.create(recursive: true);
-    }
-  }
-
-  static Future<List<String>> listGroups() async {
-    if (!await _groupsDir.exists()) return [];
-    final files = await _groupsDir
+  static Future<List<String>> listGroups(String module) async {
+    final dir = _savedDataDir(module);
+    if (!await dir.exists()) return [];
+    final files = await dir
         .list()
         .where((e) => e is File && e.path.endsWith('.json'))
         .map((e) {
-      final name = (e as File).uri.pathSegments.last;
-      return name.substring(0, name.length - 5); // strip .json
-    }).toList();
+          final name = p.basename(e.path);
+          return name.substring(0, name.length - 5);
+        })
+        .toList();
     files.sort();
     return files;
   }
 
-  static Future<void> saveGroup(String name, List<PartNumber> selectedPns) async {
-    await ensureDir();
-    final selections = selectedPns
-        .where((p) => p.isSelected)
-        .map((p) => '${p.name}|${p.flashId}')
+  static Future<void> saveGroup(
+      String module, String name, List<PartNumber> allPns) async {
+    final dir = _savedDataDir(module);
+    if (!await dir.exists()) await dir.create(recursive: true);
+    final selections = allPns
+        .where((pn) => pn.isSelected)
+        .map((pn) => '${pn.name}|${pn.flashId}')
         .toList();
     final data = {
       '_format': 'FlashConfigUI_group',
       '_version': 1,
       'selections': selections,
     };
-    final file = File('${_groupsDir.path}/$name.json');
-    await file.writeAsString(
+    await File(p.join(dir.path, '$name.json')).writeAsString(
       const JsonEncoder.withIndent('  ').convert(data),
       encoding: utf8,
     );
   }
 
-  static Future<List<String>> loadGroupSelections(String name) async {
-    final file = File('${_groupsDir.path}/$name.json');
+  static Future<List<String>> loadGroupSelections(
+      String module, String name) async {
+    final file = File(p.join(_savedDataDir(module).path, '$name.json'));
     if (!await file.exists()) return [];
     final content = await file.readAsString(encoding: utf8);
     final data = jsonDecode(content) as Map<String, dynamic>;
     return (data['selections'] as List<dynamic>).cast<String>();
   }
 
-  static Future<void> deleteGroup(String name) async {
-    final file = File('${_groupsDir.path}/$name.json');
-    if (await file.exists()) {
-      await file.delete();
-    }
+  static Future<void> deleteGroup(String module, String name) async {
+    final file = File(p.join(_savedDataDir(module).path, '$name.json'));
+    if (await file.exists()) await file.delete();
   }
 
   /// Parse "pn|flash_id" format and apply selections to the given list.

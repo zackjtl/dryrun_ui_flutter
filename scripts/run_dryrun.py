@@ -230,18 +230,17 @@ def run_dryrun(mptool_exe, flash_file, config_file, ignore_spl=False, ctype=None
     if ignore_spl:
         cmd.append("-ignore_spl")
 
-    print(f"  Command: {' '.join(cmd)}")
-
     result = subprocess.run(
         cmd,
         capture_output=True,
         cwd=str(exe_dir),
+        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0,
     )
 
     stdout_text = _decode_output(result.stdout)
     stderr_text = _decode_output(result.stderr)
 
-    return result.returncode, stdout_text, stderr_text
+    return result.returncode, stdout_text, stderr_text, ' '.join(cmd)
 
 
 def _decode_output(raw_bytes):
@@ -448,9 +447,8 @@ def main():
         for config_file in config_files:
             for device_file in device_files:
                 run_count += 1
-                print(f"--- Run {run_count}/{total_runs}: {device_file.name} + {config_file.name} ---")
 
-                returncode, stdout_text, stderr_text = run_dryrun(
+                returncode, stdout_text, stderr_text, cmd_str = run_dryrun(
                     mptool_exe,
                     device_file,
                     config_file,
@@ -480,9 +478,11 @@ def main():
                     )
                 )
 
-                if stdout_text.strip():
+                print(f"--- Run {run_count}/{total_runs}: {device_file.name} + {config_file.name} ---")
+                print(f"  Command: {cmd_str}")
+                if stdout_text:
                     print(stdout_text.rstrip("\n"))
-                if stderr_text.strip():
+                if stderr_text:
                     print(stderr_text.rstrip("\n"))
 
                 results.append({

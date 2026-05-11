@@ -51,6 +51,39 @@ class ModuleService {
     return entities.isEmpty;
   }
 
+  static String? _find7zExe() {
+    const candidates = [
+      r'C:\Program Files\7-Zip\7z.exe',
+      r'C:\Program Files (x86)\7-Zip\7z.exe',
+    ];
+    for (final path in candidates) {
+      if (File(path).existsSync()) return path;
+    }
+    return null;
+  }
+
+  static Future<void> extractModulesFrom7z(String archivePath) async {
+    final sevenZ = _find7zExe();
+    if (sevenZ == null) {
+      throw Exception('找不到 7z.exe，請安裝 7-Zip。');
+    }
+    if (!await File(archivePath).exists()) {
+      throw Exception('壓縮檔不存在：$archivePath');
+    }
+    // Extract to _exeDir so the Modules folder inside the archive lands at modulesDirPath
+    final destDir = Directory(_exeDir);
+    if (!await destDir.exists()) {
+      await destDir.create(recursive: true);
+    }
+    final result = await Process.run(
+      sevenZ,
+      ['x', archivePath, '-o$_exeDir', '-y'],
+    );
+    if (result.exitCode != 0) {
+      throw Exception('解壓縮失敗：\n${result.stderr}');
+    }
+  }
+
   static Future<void> copyModulesFrom(String sourceModulesDirPath) async {
     final sourceDir = Directory(sourceModulesDirPath);
     if (!await sourceDir.exists()) {
@@ -162,13 +195,12 @@ class ModuleService {
       }
 
       final partNumbers = _splitPartNumbers(partNumber);
-      final dirPn = partNumbers.isNotEmpty ? partNumbers.first : '';
       for (final pn in partNumbers) {
         results.add(PartNumber(
           name: pn,
           flashId: flashIdRaw,
           vendor: vendor,
-          dirPn: dirPn,
+          dirPn: pn,
           die: die,
           cellType: cellType,
           plane: plane,
